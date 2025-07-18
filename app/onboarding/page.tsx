@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 interface FormData {
@@ -32,6 +33,7 @@ interface Interest {
 }
 
 const OnboardingPage = () => {
+  const router = useRouter();
   const [formData, setFormData] = useState<FormData>({
     firstName: '',
     email: '',
@@ -88,6 +90,12 @@ const OnboardingPage = () => {
     );
   };
 
+  const handleContinue = () => {
+    if (isFormValid()) {
+      router.push('/app/recommendations');
+    }
+  };
+
   const handleInputChange = (field: keyof FormData, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -96,7 +104,6 @@ const OnboardingPage = () => {
   };
 
   const handleBirthdayChange = (field: keyof FormData['birthday'], value: string) => {
-    // Only allow numbers
     const numericValue = value.replace(/\D/g, '');
     setFormData(prev => ({
       ...prev,
@@ -163,7 +170,6 @@ const OnboardingPage = () => {
     setShowPhotoModal(true);
   };
 
-  // Clean up object URLs when component unmounts or photos change
   useEffect(() => {
     return () => {
       formData.photos.forEach(photo => {
@@ -201,7 +207,7 @@ const OnboardingPage = () => {
               e.stopPropagation();
               handleRemovePhoto(index);
             }}
-            className="absolute top-2 right-2 bg-black bg-opacity-70 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-500 transition-colors"
+            className="absolute top-2 right-2 bg-black bg-opacity-70 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-[#4DA2FF] transition-colors"
           >
             ×
           </button>
@@ -214,7 +220,7 @@ const OnboardingPage = () => {
             onChange={(e) => handlePhotoUpload(e.target.files)}
             className="hidden"
           />
-          <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center text-white text-xl font-bold">
+          <div className="w-8 h-8 bg-[#4DA2FF] rounded-full flex items-center justify-center text-white text-xl font-bold">
             +
           </div>
         </label>
@@ -236,10 +242,9 @@ const OnboardingPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      {/* Header */}
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center">
-          <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-500 rounded-full mr-3"></div>
+          <div className="w-8 h-8 bg-[#4DA2FF] rounded-full mr-3"></div>
           <span className="text-2xl font-bold">tinder</span>
         </div>
         <button className="flex items-center text-gray-400 hover:text-white">
@@ -248,7 +253,6 @@ const OnboardingPage = () => {
         </button>
       </div>
 
-      {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold text-center mb-12">Create account</h1>
         
@@ -263,7 +267,7 @@ const OnboardingPage = () => {
                 placeholder="First Name"
                 value={formData.firstName}
                 onChange={(e) => handleInputChange('firstName', e.target.value)}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-red-500 placeholder-gray-500"
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-[#4DA2FF] placeholder-gray-500"
               />
             </div>
 
@@ -274,7 +278,7 @@ const OnboardingPage = () => {
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleInputChange('email', e.target.value)}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-red-500"
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-[#4DA2FF]"
                 placeholder="Enter your email"
               />
             </div>
@@ -291,7 +295,7 @@ const OnboardingPage = () => {
                     onChange={(e) => handleBirthdayChange('month', e.target.value)}
                     placeholder="MM"
                     maxLength={2}
-                    className="w-full px-3 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-[#4DA2FF]"
                   />
                 </div>
                 <div>
@@ -302,7 +306,7 @@ const OnboardingPage = () => {
                     onChange={(e) => handleBirthdayChange('day', e.target.value)}
                     placeholder="DD"
                     maxLength={2}
-                    className="w-full px-3 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-[#4DA2FF]"
                   />
                 </div>
                 <div>
@@ -313,7 +317,7 @@ const OnboardingPage = () => {
                     onChange={(e) => handleBirthdayChange('year', e.target.value)}
                     placeholder="YYYY"
                     maxLength={4}
-                    className="w-full px-3 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-red-500"
+                    className="w-full px-3 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-[#4DA2FF]"
                   />
                 </div>
               </div>
@@ -328,7 +332,7 @@ const OnboardingPage = () => {
                   onClick={() => handleInputChange('gender', 'Man')}
                   className={`flex-1 py-3 px-4 rounded-full border-2 transition-colors ${
                     formData.gender === 'Man' 
-                      ? 'border-red-500 bg-red-500/10' 
+                      ? 'border-[#4DA2FF] bg-[#4DA2FF]/10' 
                       : 'border-gray-600 hover:border-gray-500'
                   }`}
                 >
@@ -339,7 +343,7 @@ const OnboardingPage = () => {
                   onClick={() => handleInputChange('gender', 'Woman')}
                   className={`flex-1 py-3 px-4 rounded-full border-2 transition-colors ${
                     formData.gender === 'Woman' 
-                      ? 'border-red-500 bg-red-500/10' 
+                      ? 'border-[#4DA2FF] bg-[#4DA2FF]/10' 
                       : 'border-gray-600 hover:border-gray-500'
                   }`}
                 >
@@ -351,7 +355,7 @@ const OnboardingPage = () => {
                   type="checkbox"
                   checked={formData.showGender}
                   onChange={(e) => handleInputChange('showGender', e.target.checked)}
-                  className="mr-2 accent-red-500"
+                  className="mr-2 accent-[#4DA2FF]"
                 />
                 Show my gender on my profile
               </label>
@@ -368,7 +372,7 @@ const OnboardingPage = () => {
                     onClick={() => handleInputChange('interestedIn', option)}
                     className={`flex-1 py-3 px-4 rounded-full border-2 transition-colors ${
                       formData.interestedIn === option 
-                        ? 'border-red-500 bg-red-500/10' 
+                        ? 'border-[#4DA2FF] bg-[#4DA2FF]/10' 
                         : 'border-gray-600 hover:border-gray-500'
                     }`}
                   >
@@ -396,13 +400,13 @@ const OnboardingPage = () => {
                       const option = relationshipOptions.find(opt => opt.id === id);
                       return (
                         <div key={id} className="relative">
-                          <span className="flex items-center px-3 py-1 bg-red-500/20 border border-red-500 rounded-full text-sm">
+                          <span className="flex items-center px-3 py-1 bg-[#4DA2FF]/20 border border-[#4DA2FF] rounded-full text-sm">
                             <span className="mr-1">{option?.emoji}</span>
                             {option?.title}
                             <button
                               type="button"
                               onClick={() => handleRemoveRelationshipIntent(id)}
-                              className="ml-2 text-red-500 hover:text-red-400"
+                              className="ml-2 text-[#4DA2FF] hover:text-[#3A8CE6]"
                             >
                               ×
                             </button>
@@ -446,12 +450,12 @@ const OnboardingPage = () => {
                         const interest = availableInterests.find(int => int.id === id);
                         return (
                           <div key={id} className="relative">
-                            <span className="px-3 py-1 bg-red-500/20 border border-red-500 rounded-full text-sm">
+                            <span className="px-3 py-1 bg-[#4DA2FF]/20 border border-[#4DA2FF] rounded-full text-sm">
                               {interest?.name}
                               <button
                                 type="button"
                                 onClick={() => handleRemoveInterest(id)}
-                                className="ml-2 text-red-500 hover:text-red-400"
+                                className="ml-2 text-[#4DA2FF] hover:text-[#3A8CE6]"
                               >
                                 ×
                               </button>
@@ -501,7 +505,7 @@ const OnboardingPage = () => {
             />
             <label
               htmlFor="photo-upload"
-              className="block w-full py-3 px-4 bg-red-500 text-white rounded-lg text-center hover:bg-red-600 transition-colors cursor-pointer"
+              className="block w-full py-3 px-4 bg-[#4DA2FF] text-white rounded-lg text-center hover:bg-[#3A8CE6] transition-colors cursor-pointer"
             >
               Upload Photos
             </label>
@@ -513,9 +517,10 @@ const OnboardingPage = () => {
           <button 
             type="button"
             disabled={!isFormValid()}
+            onClick={handleContinue}
             className={`w-full max-w-md py-4 text-white rounded-full text-lg font-semibold transition-all ${
               isFormValid() 
-                ? 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600' 
+                ? 'bg-[#4DA2FF] hover:bg-[#3A8CE6]' 
                 : 'bg-gradient-to-r from-gray-500 to-gray-600 cursor-not-allowed opacity-70'
             }`}
           >
@@ -540,7 +545,7 @@ const OnboardingPage = () => {
               onClick={() => handleRelationshipSelect(option.id)}
               className={`p-4 rounded-lg border-2 transition-colors text-center ${
                 formData.relationshipIntent.includes(option.id)
-                  ? 'border-red-500 bg-red-500/10'
+                  ? 'border-[#4DA2FF] bg-[#4DA2FF]/10'
                   : 'border-gray-600 bg-gray-800 hover:border-gray-500'
               }`}
             >
@@ -554,7 +559,7 @@ const OnboardingPage = () => {
         <button 
           type="button"
           onClick={() => setShowRelationshipModal(false)}
-          className="w-full py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:from-red-600 hover:to-pink-600 transition-colors"
+          className="w-full py-3 bg-[#4DA2FF] text-white rounded-lg hover:bg-[#3A8CE6] transition-colors"
         >
           Save
         </button>
@@ -572,7 +577,7 @@ const OnboardingPage = () => {
               onClick={() => handleInterestSelect(interest.id)}
               className={`px-4 py-2 rounded-full border-2 transition-colors ${
                 formData.interests.includes(interest.id)
-                  ? 'border-red-500 bg-red-500/10'
+                  ? 'border-[#4DA2FF] bg-[#4DA2FF]/10'
                   : 'border-gray-600 bg-gray-800 hover:border-gray-500'
               }`}
             >
@@ -584,7 +589,7 @@ const OnboardingPage = () => {
         <button 
           type="button"
           onClick={() => setShowInterestModal(false)}
-          className="w-full py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:from-red-600 hover:to-pink-600 transition-colors"
+          className="w-full py-3 bg-[#4DA2FF] text-white rounded-lg hover:bg-[#3A8CE6] transition-colors"
         >
           Save
         </button>
@@ -623,7 +628,7 @@ const OnboardingPage = () => {
           <button 
             type="button"
             onClick={() => setShowPhotoModal(false)}
-            className="flex-1 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full hover:from-red-600 hover:to-pink-600 transition-all"
+            className="flex-1 py-3 bg-[#4DA2FF] text-white rounded-full hover:bg-[#3A8CE6] transition-all"
           >
             Choose
           </button>
@@ -641,4 +646,4 @@ const OnboardingPage = () => {
   );
 };
 
-export default OnboardingPage;  
+export default OnboardingPage;
