@@ -11,7 +11,7 @@ const LandingPage = () => {
 
   const handleCreateAccount = (e: React.MouseEvent) => {
     e.preventDefault();
-    router.push("/onboarding");
+    router.push("/login");
   };
 
   return (
