@@ -1,18 +1,21 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Shield, Loader2, Check } from 'lucide-react';
-import { useConnectWallet, useCurrentAccount, useWallets } from '@mysten/dapp-kit';
+import { Shield, Loader2, Check, LogOut, Wallet } from 'lucide-react';
+import { 
+  useConnectWallet, 
+  useCurrentAccount, 
+  useWallets,
+  useDisconnectWallet,
+  ConnectButton 
+} from '@mysten/dapp-kit';
 import { isEnokiWallet, type EnokiWallet, type AuthProvider } from '@mysten/enoki';
-
-type LoginMethod = 'google' | 'slush';
-type Step = 'method' | 'loading' | 'success' | 'google' | 'slush';
 
 const LoginFlow = () => {
   const router = useRouter();
   const currentAccount = useCurrentAccount();
   const { mutateAsync: connect } = useConnectWallet();
+  const { mutateAsync: disconnect } = useDisconnectWallet();
   const wallets = useWallets().filter(isEnokiWallet);
 
   const walletsByProvider = wallets.reduce(
@@ -21,54 +24,73 @@ const LoginFlow = () => {
   );
 
   const googleWallet = walletsByProvider.get('google');
-  const [currentStep, setCurrentStep] = useState<Step>('method');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleConnectWallet = async (wallet: EnokiWallet) => {
+  const handleConnectGoogle = async () => {
+    if (!googleWallet) return;
+    
     setIsLoading(true);
     setError('');
     
     try {
-      await connect({ wallet });
-      
-      // Wait for account to be available
-      await new Promise((resolve) => {
-        const interval = setInterval(() => {
-          if (currentAccount) {
-            clearInterval(interval);
-            resolve(true);
-          }
-        }, 100);
-      });
-      
+      await connect({ wallet: googleWallet });
       router.push('/onboarding');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to connect wallet');
+      setError(err instanceof Error ? err.message : 'Failed to connect with Google');
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (currentAccount) {
-      setCurrentStep('success');
-      const timer = setTimeout(() => router.push('/onboarding'), 1500);
-      return () => clearTimeout(timer);
+  const handleDisconnect = async () => {
+    try {
+      await disconnect();
+      router.refresh();
+    } catch (err) {
+      setError('Failed to disconnect');
     }
-  }, [currentAccount, router]);
+  };
 
   if (currentAccount) {
     return (
-      <div className="text-center animate-fade-in">
-        <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Check className="w-8 h-8 text-white" />
-        </div>
-        <h1 className="text-3xl font-bold mb-2">Welcome!</h1>
-        <p className="text-gray-300 mb-4">
-          Connected as: {currentAccount.address.slice(0, 6)}...{currentAccount.address.slice(-4)}
-        </p>
-        <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+      <div className="min-h-screen bg-gray-900 text-white">
+        <main className="flex flex-col items-center justify-center min-h-[80vh] px-4">
+          <div className="w-full max-w-md text-center animate-fade-in">
+            <div className="relative mb-8">
+              <div className="w-24 h-24 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-blue-400">
+                <Check className="w-10 h-10 text-blue-400" />
+              </div>
+              <button
+                onClick={handleDisconnect}
+                className="absolute top-0 right-0 bg-blue-500/90 hover:bg-blue-600 text-white p-2 rounded-full transition-all"
+                title="Disconnect"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <h1 className="text-3xl font-bold mb-2">Welcome!</h1>
+            <p className="text-gray-300 mb-6">
+              Connected as: <span className="font-mono text-blue-400">{currentAccount.address.slice(0, 6)}...{currentAccount.address.slice(-4)}</span>
+            </p>
+            
+            <div className="flex flex-col space-y-4 max-w-xs mx-auto">
+              <button
+                onClick={() => router.push('/onboarding')}
+                className="bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-3 px-6 rounded-full hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg"
+              >
+                Continue to Dashboard
+              </button>
+              <button
+                onClick={handleDisconnect}
+                className="bg-transparent text-blue-400 font-medium py-2 px-4 rounded-full hover:bg-blue-900/30 transition-all border border-blue-400/50"
+              >
+                Disconnect Wallet
+              </button>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
@@ -77,32 +99,62 @@ const LoginFlow = () => {
     <div className="min-h-screen bg-gray-900 text-white">
       <main className="flex flex-col items-center justify-center min-h-[80vh] px-4">
         <div className="w-full max-w-md">
-          {currentStep === 'method' && (
-            <div className="text-center animate-fade-in">
-              <h1 className="text-4xl font-bold mb-4">Welcome Back</h1>
-              <div className="bg-gray-800/30 border border-gray-700/50 rounded-2xl p-8">
-                <div className="space-y-4">
-                  {googleWallet && (
-                    <button
-                      onClick={() => handleConnectWallet(googleWallet)}
-                      className="w-full bg-white text-gray-900 font-semibold py-3 px-6 rounded-full flex items-center justify-center gap-3"
-                    >
-                      <GoogleIcon />
-                      Sign in with Google
-                    </button>
-                  )}
+          <div className="text-center animate-fade-in">
+            <h1 className="text-4xl font-bold mb-6">Welcome Back</h1>
+            <div className="bg-gray-800/30 backdrop-blur-sm border border-gray-700/50 rounded-2xl p-8 shadow-xl">
+              <div className="space-y-4">
+                {/* Slush Wallet Connection */}
+                <div className="group">
+                  <ConnectButton
+                    connectText={
+                      <div className="flex items-center justify-center gap-3 group-hover:gap-4 transition-all">
+                        <Wallet className="w-5 h-5" />
+                        <span>Connect Slush Wallet</span>
+                      </div>
+                    }
+                    className="w-full bg-gradient-to-r from-[#4DA2FF] to-[#3A8CE6] text-white font-semibold py-3 px-6 rounded-full hover:from-[#3A8CE6] hover:to-[#4DA2FF] transition-all shadow-md"
+                  />
                 </div>
-                <div className="mt-8 p-4 bg-gray-900/50 rounded-lg border border-gray-700/30">
-                  <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
-                    <Shield className="w-4 h-4" />
-                    <span>Secured by zkLogin & Enoki</span>
-                  </div>
+
+                {/* Google zkLogin */}
+                {googleWallet && (
+                  <button
+                    onClick={handleConnectGoogle}
+                    className="w-full bg-white/90 hover:bg-white text-gray-900 font-semibold py-3 px-6 rounded-full flex items-center justify-center gap-3 transition-all shadow-md"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <GoogleIcon />
+                        Sign in with Google
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+              
+              <div className="mt-8 p-4 bg-gray-900/50 rounded-lg border border-gray-700/30">
+                <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
+                  <Shield className="w-4 h-4 text-blue-400" />
+                  <span>Secured by zkLogin & Enoki</span>
                 </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
       </main>
+
+      {/* Error Toast */}
+      {error && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-blue-500/90 text-white px-6 py-3 rounded-lg shadow-lg animate-fade-in-up">
+          <div className="flex items-center gap-2">
+            <Shield className="w-5 h-5" />
+            <span>{error}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
