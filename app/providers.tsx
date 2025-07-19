@@ -18,7 +18,14 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       <SuiClientProvider networks={networkConfig} defaultNetwork="testnet">
         <RegisterEnokiWallets />
-        <WalletProvider autoConnect>
+        <WalletProvider 
+          autoConnect
+          storage={{
+            getItem: (key: string) => sessionStorage.getItem(key),
+            setItem: (key: string, value: string) => sessionStorage.setItem(key, value),
+            removeItem: (key: string) => sessionStorage.removeItem(key),
+          }}
+        >
           {children}
         </WalletProvider>
       </SuiClientProvider>
