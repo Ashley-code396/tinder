@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+
+#button continue to mint NFT
+const handleContinue = async () => {
+  if (!isFormValid()) return;
+
+  // 1. Connect wallet (if not already connected)
+  // 2. Prepare profile data (metadata)
+  // 3. Call smart contract to mint/update NFT
+  // 4. Redirect to recommendations or profile page
+};
+
