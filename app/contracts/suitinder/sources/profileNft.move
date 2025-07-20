@@ -1,17 +1,11 @@
 module suitinder::profileNft;
 
-
 use sui::table::{Self, Table};
 use std::string::String;
-use sui::url::Url;
+//use sui::url::Url;
 use sui::package::Publisher;
 
-
-
-
 const EProfileAlreadyExists: u64 = 1;
-
-
 
 public struct ProfileRegistry has key{
     id: UID,
@@ -32,15 +26,10 @@ public struct ProfileNFT has key{
     interested_in: String,
     relationship_intent: vector<String>,
     interests: vector<String>,
-    photos: vector<Url>,
+    //photos: vector<Url>,
 }
 
-
-
 public struct PROFILENFT has drop{}
-
-//public struct SUITINDER has drop{}
-
 
 
 fun init(otw: PROFILENFT, ctx: &mut TxContext){
@@ -54,8 +43,7 @@ fun init(otw: PROFILENFT, ctx: &mut TxContext){
     };
 
     transfer::share_object(profile_registry);
-    
-    
+     
 }
 
 
@@ -71,7 +59,7 @@ public fun mint_profile_nft(
     interested_in: String,
     relationship_intent: vector<String>,
     interests: vector<String>,
-    photos: vector<Url>,
+    //photos: vector<Url>,
     ctx: &mut TxContext
 
 ){
@@ -89,10 +77,8 @@ public fun mint_profile_nft(
         show_gender,
         interested_in,
         relationship_intent,
-        interests,
-        photos
-
-
+        interests
+        //photos
 
     };
 
