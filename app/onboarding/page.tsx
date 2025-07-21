@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
+import { Transaction } from "@mysten/sui/transactions";
+import { buildProfileMintTx, validateMintParams, ProfileMintParams, ProfileMintTxParams } from "./onboarding-integration";
 
 interface FormData {
   firstName: string;
@@ -12,9 +15,9 @@ interface FormData {
     day: string;
     year: string;
   };
-  gender: 'Man' | 'Woman' | null;
+  gender: "Man" | "Woman" | null;
   showGender: boolean;
-  interestedIn: 'Men' | 'Women' | 'Everyone' | null;
+  interestedIn: "Men" | "Women" | "Everyone" | null;
   relationshipIntent: string[];
   interests: string[];
   photos: (File | string)[];
@@ -34,124 +37,171 @@ interface Interest {
 
 const OnboardingPage = () => {
   const router = useRouter();
+  const currentAccount = useCurrentAccount();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
   const [formData, setFormData] = useState<FormData>({
-    firstName: '',
-    email: '',
-    birthday: {
-      month: '',
-      day: '',
-      year: ''
-    },
+    firstName: "",
+    email: "",
+    birthday: { month: "", day: "", year: "" },
     gender: null,
     showGender: false,
     interestedIn: null,
     relationshipIntent: [],
     interests: [],
-    photos: []
+    photos: [],
   });
-
   const [showRelationshipModal, setShowRelationshipModal] = useState(false);
   const [showInterestModal, setShowInterestModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
+  const [error, setError] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const relationshipOptions: RelationshipOption[] = [
-    { id: 'long-term', emoji: '💕', title: 'Long-term partner', subtitle: '' },
-    { id: 'long-term-open', emoji: '😘', title: 'Long-term,', subtitle: 'open to short' },
-    { id: 'short-term-open', emoji: '🥂', title: 'Short-term,', subtitle: 'open to long' },
-    { id: 'short-term-fun', emoji: '🎉', title: 'Short-term fun', subtitle: '' },
-    { id: 'new-friends', emoji: '✋', title: 'New friends', subtitle: '' },
-    { id: 'figuring-out', emoji: '🤔', title: 'Still figuring it out', subtitle: '' },
+    { id: "long-term", emoji: "💕", title: "Long-term partner", subtitle: "" },
+    { id: "long-term-open", emoji: "😘", title: "Long-term,", subtitle: "open to short" },
+    { id: "short-term-open", emoji: "🥂", title: "Short-term,", subtitle: "open to long" },
+    { id: "short-term-fun", emoji: "🎉", title: "Short-term fun", subtitle: "" },
+    { id: "new-friends", emoji: "✋", title: "New friends", subtitle: "" },
+    { id: "figuring-out", emoji: "🤔", title: "Still figuring it out", subtitle: "" },
   ];
 
   const availableInterests: Interest[] = [
-    { id: 'spa', name: 'Spa' },
-    { id: 'spotify', name: 'Spotify' },
-    { id: 'social-media', name: 'Social Media' },
-    { id: 'exhibition', name: 'Exhibition' },
-    { id: 'fitness', name: 'Fitness classes' },
-    { id: 'travel', name: 'Travel' },
-    { id: 'photography', name: 'Photography' },
-    { id: 'cooking', name: 'Cooking' },
-    { id: 'music', name: 'Music' },
-    { id: 'art', name: 'Art' },
+    { id: "spa", name: "Spa" },
+    { id: "spotify", name: "Spotify" },
+    { id: "social-media", name: "Social Media" },
+    { id: "exhibition", name: "Exhibition" },
+    { id: "fitness", name: "Fitness classes" },
+    { id: "travel", name: "Travel" },
+    { id: "photography", name: "Photography" },
+    { id: "cooking", name: "Cooking" },
+    { id: "music", name: "Music" },
+    { id: "art", name: "Art" },
   ];
 
   const isFormValid = () => {
     return (
-      formData.firstName.trim() !== '' &&
-      formData.email.trim() !== '' &&
+      formData.firstName.trim() !== "" &&
+      formData.email.trim() !== "" &&
       formData.gender !== null &&
       formData.interestedIn !== null &&
       formData.photos.length >= 2 &&
-      formData.birthday.month !== '' &&
-      formData.birthday.day !== '' &&
-      formData.birthday.year !== ''
+      formData.birthday.month !== "" &&
+      formData.birthday.day !== "" &&
+      formData.birthday.year !== ""
     );
   };
 
-  const handleContinue = () => {
-    if (isFormValid()) {
-      router.push('/app/recommendations');
+  const handleContinue = async () => {
+    if (!isFormValid()) {
+      setError("Please fill in all required fields and upload at least 2 photos.");
+      return;
+    }
+
+    if (!currentAccount) {
+      setError("No wallet connected. Please connect your wallet.");
+      return;
+    }
+
+    const mintParams: ProfileMintParams = {
+      firstName: formData.firstName,
+      email: formData.email,
+      birthday: {
+        month: parseInt(formData.birthday.month),
+        day: parseInt(formData.birthday.day),
+        year: parseInt(formData.birthday.year),
+      },
+      gender: formData.gender!,
+      showGender: formData.showGender,
+      interestedIn: formData.interestedIn!,
+      relationshipIntent: formData.relationshipIntent,
+      interests: formData.interests,
+    };
+
+    if (!validateMintParams(mintParams)) {
+      setError("Invalid input data. Please check your inputs (e.g., valid birthday).");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const tx = buildProfileMintTx({ ...mintParams, gasBudget: 100000000 });
+      const result = await signAndExecute(
+        { transaction: tx, account: currentAccount },
+        {
+          onSuccess: () => {
+            router.push("/app/recommendations");
+          },
+          onError: (err) => {
+            setError(err.message || "Failed to execute transaction.");
+          },
+        }
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred while processing the transaction.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleInputChange = (field: keyof FormData, value: any) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
-  const handleBirthdayChange = (field: keyof FormData['birthday'], value: string) => {
-    const numericValue = value.replace(/\D/g, '');
-    setFormData(prev => ({
+  const handleBirthdayChange = (field: keyof FormData["birthday"], value: string) => {
+    const numericValue = value.replace(/\D/g, "");
+    setFormData((prev) => ({
       ...prev,
       birthday: {
         ...prev.birthday,
-        [field]: numericValue
-      }
+        [field]: numericValue,
+      },
     }));
   };
 
   const handleRelationshipSelect = (optionId: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       relationshipIntent: prev.relationshipIntent.includes(optionId)
-        ? prev.relationshipIntent.filter(id => id !== optionId)
-        : [...prev.relationshipIntent, optionId]
+        ? prev.relationshipIntent.filter((id) => id !== optionId)
+        : [...prev.relationshipIntent, optionId],
     }));
   };
 
   const handleRemoveRelationshipIntent = (id: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      relationshipIntent: prev.relationshipIntent.filter(item => item !== id)
+      relationshipIntent: prev.relationshipIntent.filter((item) => item !== id),
     }));
   };
 
   const handleInterestSelect = (interestId: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       interests: prev.interests.includes(interestId)
-        ? prev.interests.filter(id => id !== interestId)
-        : [...prev.interests, interestId]
+        ? prev.interests.filter((id) => id !== interestId)
+        : [...prev.interests, interestId],
     }));
   };
 
   const handleRemoveInterest = (id: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      interests: prev.interests.filter(item => item !== id)
+      interests: prev.interests.filter((item) => item !== id),
     }));
   };
 
   const handlePhotoUpload = (files: FileList | null) => {
     if (files) {
       const newPhotos = Array.from(files);
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        photos: [...prev.photos, ...newPhotos].slice(0, 6)
+        photos: [...prev.photos, ...newPhotos].slice(0, 6),
       }));
     }
   };
@@ -159,9 +209,9 @@ const OnboardingPage = () => {
   const handleRemovePhoto = (index: number) => {
     const updatedPhotos = [...formData.photos];
     updatedPhotos.splice(index, 1);
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      photos: updatedPhotos
+      photos: updatedPhotos,
     }));
   };
 
@@ -172,8 +222,8 @@ const OnboardingPage = () => {
 
   useEffect(() => {
     return () => {
-      formData.photos.forEach(photo => {
-        if (typeof photo !== 'string') {
+      formData.photos.forEach((photo) => {
+        if (typeof photo !== "string") {
           URL.revokeObjectURL(URL.createObjectURL(photo));
         }
       });
@@ -187,15 +237,15 @@ const OnboardingPage = () => {
     <div className="relative w-32 h-40 bg-gray-800 rounded-lg border-2 border-dashed border-gray-600 flex items-center justify-center cursor-pointer hover:border-gray-500 transition-colors overflow-hidden">
       {hasPhoto ? (
         <>
-          {typeof formData.photos[index] === 'string' ? (
-            <img 
+          {typeof formData.photos[index] === "string" ? (
+            <img
               src={formData.photos[index] as string}
               alt={`Uploaded ${index + 1}`}
               className="w-full h-full object-cover"
               onClick={() => openPhotoModal(formData.photos[index] as string)}
             />
           ) : (
-            <img 
+            <img
               src={URL.createObjectURL(formData.photos[index] as File)}
               alt={`Uploaded ${index + 1}`}
               className="w-full h-full object-cover"
@@ -255,7 +305,13 @@ const OnboardingPage = () => {
 
       <div className="max-w-6xl mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold text-center mb-12">Create account</h1>
-        
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/20 text-red-400 border border-red-500/50 rounded-lg text-center">
+            {error}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Left Column - Form */}
           <div className="space-y-6">
@@ -266,7 +322,7 @@ const OnboardingPage = () => {
                 type="text"
                 placeholder="First Name"
                 value={formData.firstName}
-                onChange={(e) => handleInputChange('firstName', e.target.value)}
+                onChange={(e) => handleInputChange("firstName", e.target.value)}
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-[#4DA2FF] placeholder-gray-500"
               />
             </div>
@@ -277,7 +333,7 @@ const OnboardingPage = () => {
               <input
                 type="email"
                 value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
+                onChange={(e) => handleInputChange("email", e.target.value)}
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-[#4DA2FF]"
                 placeholder="Enter your email"
               />
@@ -292,7 +348,7 @@ const OnboardingPage = () => {
                   <input
                     type="text"
                     value={formData.birthday.month}
-                    onChange={(e) => handleBirthdayChange('month', e.target.value)}
+                    onChange={(e) => handleBirthdayChange("month", e.target.value)}
                     placeholder="MM"
                     maxLength={2}
                     className="w-full px-3 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-[#4DA2FF]"
@@ -303,7 +359,7 @@ const OnboardingPage = () => {
                   <input
                     type="text"
                     value={formData.birthday.day}
-                    onChange={(e) => handleBirthdayChange('day', e.target.value)}
+                    onChange={(e) => handleBirthdayChange("day", e.target.value)}
                     placeholder="DD"
                     maxLength={2}
                     className="w-full px-3 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-[#4DA2FF]"
@@ -314,7 +370,7 @@ const OnboardingPage = () => {
                   <input
                     type="text"
                     value={formData.birthday.year}
-                    onChange={(e) => handleBirthdayChange('year', e.target.value)}
+                    onChange={(e) => handleBirthdayChange("year", e.target.value)}
                     placeholder="YYYY"
                     maxLength={4}
                     className="w-full px-3 py-3 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-[#4DA2FF]"
@@ -329,22 +385,22 @@ const OnboardingPage = () => {
               <div className="flex gap-4 mb-3">
                 <button
                   type="button"
-                  onClick={() => handleInputChange('gender', 'Man')}
+                  onClick={() => handleInputChange("gender", "Man")}
                   className={`flex-1 py-3 px-4 rounded-full border-2 transition-colors ${
-                    formData.gender === 'Man' 
-                      ? 'border-[#4DA2FF] bg-[#4DA2FF]/10' 
-                      : 'border-gray-600 hover:border-gray-500'
+                    formData.gender === "Man"
+                      ? "border-[#4DA2FF] bg-[#4DA2FF]/10"
+                      : "border-gray-600 hover:border-gray-500"
                   }`}
                 >
                   Man
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleInputChange('gender', 'Woman')}
+                  onClick={() => handleInputChange("gender", "Woman")}
                   className={`flex-1 py-3 px-4 rounded-full border-2 transition-colors ${
-                    formData.gender === 'Woman' 
-                      ? 'border-[#4DA2FF] bg-[#4DA2FF]/10' 
-                      : 'border-gray-600 hover:border-gray-500'
+                    formData.gender === "Woman"
+                      ? "border-[#4DA2FF] bg-[#4DA2FF]/10"
+                      : "border-gray-600 hover:border-gray-500"
                   }`}
                 >
                   Woman
@@ -354,7 +410,7 @@ const OnboardingPage = () => {
                 <input
                   type="checkbox"
                   checked={formData.showGender}
-                  onChange={(e) => handleInputChange('showGender', e.target.checked)}
+                  onChange={(e) => handleInputChange("showGender", e.target.checked)}
                   className="mr-2 accent-[#4DA2FF]"
                 />
                 Show my gender on my profile
@@ -365,15 +421,15 @@ const OnboardingPage = () => {
             <div>
               <label className="block text-sm font-medium mb-2">Interested in</label>
               <div className="flex gap-4">
-                {['Men', 'Women', 'Everyone'].map((option) => (
+                {["Men", "Women", "Everyone"].map((option) => (
                   <button
                     key={option}
                     type="button"
-                    onClick={() => handleInputChange('interestedIn', option)}
+                    onClick={() => handleInputChange("interestedIn", option)}
                     className={`flex-1 py-3 px-4 rounded-full border-2 transition-colors ${
-                      formData.interestedIn === option 
-                        ? 'border-[#4DA2FF] bg-[#4DA2FF]/10' 
-                        : 'border-gray-600 hover:border-gray-500'
+                      formData.interestedIn === option
+                        ? "border-[#4DA2FF] bg-[#4DA2FF]/10"
+                        : "border-gray-600 hover:border-gray-500"
                     }`}
                   >
                     {option}
@@ -387,7 +443,7 @@ const OnboardingPage = () => {
               <label className="block text-sm font-medium mb-2">Looking for</label>
               {formData.relationshipIntent.length > 0 ? (
                 <div className="mb-4">
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setShowRelationshipModal(true)}
                     className="flex items-center py-3 px-4 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700 transition-colors mb-2"
@@ -397,7 +453,7 @@ const OnboardingPage = () => {
                   </button>
                   <div className="flex flex-wrap gap-2">
                     {formData.relationshipIntent.map((id) => {
-                      const option = relationshipOptions.find(opt => opt.id === id);
+                      const option = relationshipOptions.find((opt) => opt.id === id);
                       return (
                         <div key={id} className="relative">
                           <span className="flex items-center px-3 py-1 bg-[#4DA2FF]/20 border border-[#4DA2FF] rounded-full text-sm">
@@ -417,7 +473,7 @@ const OnboardingPage = () => {
                   </div>
                 </div>
               ) : (
-                <button 
+                <button
                   type="button"
                   onClick={() => setShowRelationshipModal(true)}
                   className="flex items-center py-3 px-4 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700 transition-colors"
@@ -431,13 +487,13 @@ const OnboardingPage = () => {
             {/* Optional Section */}
             <div className="border-t border-gray-700 pt-6">
               <h3 className="text-lg font-medium text-center mb-6">Optional</h3>
-              
+
               {/* Interests */}
               <div>
                 <label className="block text-sm font-medium mb-2">Interests</label>
                 {formData.interests.length > 0 ? (
                   <div className="mb-4">
-                    <button 
+                    <button
                       type="button"
                       onClick={() => setShowInterestModal(true)}
                       className="flex items-center py-3 px-4 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700 transition-colors mb-2"
@@ -447,7 +503,7 @@ const OnboardingPage = () => {
                     </button>
                     <div className="flex flex-wrap gap-2">
                       {formData.interests.map((id) => {
-                        const interest = availableInterests.find(int => int.id === id);
+                        const interest = availableInterests.find((int) => int.id === id);
                         return (
                           <div key={id} className="relative">
                             <span className="px-3 py-1 bg-[#4DA2FF]/20 border border-[#4DA2FF] rounded-full text-sm">
@@ -466,7 +522,7 @@ const OnboardingPage = () => {
                     </div>
                   </div>
                 ) : (
-                  <button 
+                  <button
                     type="button"
                     onClick={() => setShowInterestModal(true)}
                     className="flex items-center py-3 px-4 bg-gray-800 border border-gray-700 rounded-lg hover:bg-gray-700 transition-colors"
@@ -514,17 +570,17 @@ const OnboardingPage = () => {
 
         {/* Continue Button */}
         <div className="flex flex-col items-center mt-12">
-          <button 
+          <button
             type="button"
-            disabled={!isFormValid()}
+            disabled={!isFormValid() || isLoading}
             onClick={handleContinue}
             className={`w-full max-w-md py-4 text-white rounded-full text-lg font-semibold transition-all ${
-              isFormValid() 
-                ? 'bg-[#4DA2FF] hover:bg-[#3A8CE6]' 
-                : 'bg-gradient-to-r from-gray-500 to-gray-600 cursor-not-allowed opacity-70'
+              isFormValid() && !isLoading
+                ? "bg-[#4DA2FF] hover:bg-[#3A8CE6]"
+                : "bg-gradient-to-r from-gray-500 to-gray-600 cursor-not-allowed opacity-70"
             }`}
           >
-            Continue
+            {isLoading ? "Processing..." : "Continue"}
           </button>
           <p className="text-center text-blue-400 mt-4 cursor-pointer hover:underline">
             Already have an account? Log in.
@@ -536,7 +592,7 @@ const OnboardingPage = () => {
       <Modal isOpen={showRelationshipModal} onClose={() => setShowRelationshipModal(false)}>
         <h2 className="text-2xl font-bold mb-2">What are you looking for?</h2>
         <p className="text-gray-400 mb-6">All good if it changes. There's something for everyone.</p>
-        
+
         <div className="grid grid-cols-2 gap-4 mb-6">
           {relationshipOptions.map((option) => (
             <button
@@ -545,8 +601,8 @@ const OnboardingPage = () => {
               onClick={() => handleRelationshipSelect(option.id)}
               className={`p-4 rounded-lg border-2 transition-colors text-center ${
                 formData.relationshipIntent.includes(option.id)
-                  ? 'border-[#4DA2FF] bg-[#4DA2FF]/10'
-                  : 'border-gray-600 bg-gray-800 hover:border-gray-500'
+                  ? "border-[#4DA2FF] bg-[#4DA2FF]/10"
+                  : "border-gray-600 bg-gray-800 hover:border-gray-500"
               }`}
             >
               <div className="text-2xl mb-2">{option.emoji}</div>
@@ -555,8 +611,8 @@ const OnboardingPage = () => {
             </button>
           ))}
         </div>
-        
-        <button 
+
+        <button
           type="button"
           onClick={() => setShowRelationshipModal(false)}
           className="w-full py-3 bg-[#4DA2FF] text-white rounded-lg hover:bg-[#3A8CE6] transition-colors"
@@ -568,7 +624,7 @@ const OnboardingPage = () => {
       {/* Interests Modal */}
       <Modal isOpen={showInterestModal} onClose={() => setShowInterestModal(false)}>
         <h2 className="text-2xl font-bold mb-6">Select Your Interests</h2>
-        
+
         <div className="flex flex-wrap gap-2 mb-6">
           {availableInterests.map((interest) => (
             <button
@@ -577,16 +633,16 @@ const OnboardingPage = () => {
               onClick={() => handleInterestSelect(interest.id)}
               className={`px-4 py-2 rounded-full border-2 transition-colors ${
                 formData.interests.includes(interest.id)
-                  ? 'border-[#4DA2FF] bg-[#4DA2FF]/10'
-                  : 'border-gray-600 bg-gray-800 hover:border-gray-500'
+                  ? "border-[#4DA2FF] bg-[#4DA2FF]/10"
+                  : "border-gray-600 bg-gray-800 hover:border-gray-500"
               }`}
             >
               {interest.name}
             </button>
           ))}
         </div>
-        
-        <button 
+
+        <button
           type="button"
           onClick={() => setShowInterestModal(false)}
           className="w-full py-3 bg-[#4DA2FF] text-white rounded-lg hover:bg-[#3A8CE6] transition-colors"
@@ -598,14 +654,14 @@ const OnboardingPage = () => {
       {/* Photo Adjustment Modal */}
       <Modal isOpen={showPhotoModal} onClose={() => setShowPhotoModal(false)}>
         <h2 className="text-2xl font-bold mb-6 text-center">Adjust Photo</h2>
-        
+
         <div className="flex justify-center mb-6">
           <div className="relative">
             <div className="w-64 h-80 bg-gray-700 rounded-lg flex items-center justify-center">
               {selectedPhoto && (
-                <img 
-                  src={selectedPhoto} 
-                  alt="Selected" 
+                <img
+                  src={selectedPhoto}
+                  alt="Selected"
                   className="w-full h-full object-cover rounded-lg"
                 />
               )}
@@ -613,19 +669,19 @@ const OnboardingPage = () => {
             <div className="absolute inset-0 border-2 border-gray-400 rounded-lg pointer-events-none"></div>
           </div>
         </div>
-        
+
         <div className="flex items-center justify-center mb-6">
           <input type="range" className="w-full" min="0" max="100" defaultValue="50" />
-          <button 
+          <button
             type="button"
             className="ml-4 p-2 bg-gray-700 rounded-full hover:bg-gray-600 transition-colors"
           >
             <span className="text-white">↻</span>
           </button>
         </div>
-        
+
         <div className="flex gap-4">
-          <button 
+          <button
             type="button"
             onClick={() => setShowPhotoModal(false)}
             className="flex-1 py-3 bg-[#4DA2FF] text-white rounded-full hover:bg-[#3A8CE6] transition-all"
@@ -633,8 +689,8 @@ const OnboardingPage = () => {
             Choose
           </button>
         </div>
-        
-        <button 
+
+        <button
           type="button"
           onClick={() => setShowPhotoModal(false)}
           className="w-full py-3 text-gray-400 hover:text-white transition-colors mt-2"
