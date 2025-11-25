@@ -1,12 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 const LandingPage = () => {
-  const [showAuthOptions, setShowAuthOptions] = useState(false);
-  const staticTimestamp = "07:53 AM, July 18, 2025 EAT";
+  const staticTimestamp = "07:53 AM, November 25, 2025 EAT";
   const router = useRouter();
 
   const handleCreateAccount = (e: React.MouseEvent) => {

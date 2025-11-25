@@ -1,17 +1,13 @@
 'use client';
 
 import '@mysten/dapp-kit/dist/index.css';
-import { createNetworkConfig, SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
-import { getFullnodeUrl } from '@mysten/sui/client';
+import { SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RegisterEnokiWallets } from './enokiwallets/register';
+import { networkConfig } from './networkConfig';
 
 const queryClient = new QueryClient();
-const { networkConfig } = createNetworkConfig({
-  testnet: { url: getFullnodeUrl('testnet') },
-  mainnet: { url: getFullnodeUrl('mainnet') },
-  devnet: { url: getFullnodeUrl('devnet') },
-});
+
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
