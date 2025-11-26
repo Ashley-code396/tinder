@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState} from 'react';
 import { useRouter } from 'next/navigation';
 import { Shield, Loader2, Check, LogOut, Wallet } from 'lucide-react';
 import { 
@@ -35,7 +35,7 @@ const LoginFlow = () => {
     
     try {
       await connect({ wallet: googleWallet });
-      router.push('/onboarding');
+      router.push('/profile');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to connect with Google');
     } finally {
@@ -77,7 +77,7 @@ const LoginFlow = () => {
             
             <div className="flex flex-col space-y-4 max-w-xs mx-auto">
               <button
-                onClick={() => router.push('/onboarding')}
+                onClick={() => router.push('/profile')}
                 className="bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold py-3 px-6 rounded-full hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg"
               >
                 Continue to Dashboard

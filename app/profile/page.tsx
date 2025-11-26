@@ -2,10 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
-import { Transaction } from "@mysten/sui/transactions";
-import { buildProfileMintTx, validateMintParams, ProfileMintParams, ProfileMintTxParams } from "./onboarding-integration";
+import { buildProfileMintTx, validateMintParams, ProfileMintParams } from "./profile-integration";
 
 interface FormData {
   firstName: string;
@@ -35,7 +33,7 @@ interface Interest {
   name: string;
 }
 
-const OnboardingPage = () => {
+const ProfilePage = () => {
   const router = useRouter();
   const currentAccount = useCurrentAccount();
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
@@ -702,4 +700,4 @@ const OnboardingPage = () => {
   );
 };
 
-export default OnboardingPage;
+export default ProfilePage;
