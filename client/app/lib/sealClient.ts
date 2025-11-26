@@ -1,5 +1,6 @@
 import { useSuiClient } from "@mysten/dapp-kit";
 import { SealClient } from "@mysten/seal";
+import { fromHex} from "@mysten/sui/utils";
 
 const suiClient = useSuiClient();
 
@@ -14,4 +15,22 @@ const client = new SealClient({
   verifyKeyServers: false,
 });
 
-export {client};
+export async function encryptData(
+  packageId: string, 
+  id: string, 
+  data: Uint8Array
+): 
+  Promise<{ encryptedBytes: Uint8Array, backupKey: Uint8Array }> {
+  const { encryptedObject: encryptedBytes, key: backupKey } = await client.encrypt({
+    threshold: 2,
+    packageId: packageId,
+    id: id,
+    data,
+  });
+  return { encryptedBytes, backupKey };
+}
+
+
+
+
+export { client };
