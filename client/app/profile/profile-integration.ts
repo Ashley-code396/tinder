@@ -1,4 +1,5 @@
 import { Transaction } from "@mysten/sui/transactions";
+import { TESTNET_PACKAGE_ID, REGISTRY_OBJECT_ID } from "../constants";
 
 export interface ProfileMintParams {
   firstName: string;
@@ -22,15 +23,10 @@ export interface ProfileMintTxParams extends ProfileMintParams {
 export const buildProfileMintTx = (params: ProfileMintTxParams): Transaction => {
   const tx = new Transaction();
 
-  if (!process.env.NEXT_PUBLIC_SUI_PROFILE_PACKAGE_ID || 
-      !process.env.NEXT_PUBLIC_SUI_PROFILE_REGISTRY_ID) {
-    throw new Error("Missing Sui contract environment variables");
-  }
-
   tx.moveCall({
-    target: `${process.env.NEXT_PUBLIC_SUI_PROFILE_PACKAGE_ID}::profileNft::mint_profile_nft`,
+    target: `${TESTNET_PACKAGE_ID}::suitinder::mint_profile_nft`,
     arguments: [
-      tx.object(process.env.NEXT_PUBLIC_SUI_PROFILE_REGISTRY_ID),
+      tx.object(REGISTRY_OBJECT_ID),
       tx.pure.string(params.firstName),
       tx.pure.string(params.email),
       tx.pure.u64(BigInt(params.birthday.month)),
@@ -50,6 +46,20 @@ export const buildProfileMintTx = (params: ProfileMintTxParams): Transaction => 
 
   return tx;
 };
+
+export const buildCreateWhitelistEntryTx = (packageId: string, gasBudget?: number) => {
+  const tx = new Transaction();
+
+  const [cap, whitelist] = tx.moveCall({
+    target: `${packageId}::suitinder::create_whitelist_entry`,
+    arguments: []
+  });
+
+  if (gasBudget) tx.setGasBudget(gasBudget);
+
+  return { tx, whitelistId: whitelist };
+};
+
 
 export const validateMintParams = (params: ProfileMintParams): boolean => {
   const currentYear = new Date().getFullYear();
