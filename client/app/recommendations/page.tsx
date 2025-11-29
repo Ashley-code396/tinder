@@ -86,7 +86,7 @@ const RecommendationsPage = () => {
       </aside>
 
       {/* MAIN CONTENT */}
-      <main className="flex-1 flex flex-col items-center justify-center relative px-6">
+      <main className="flex-1 flex flex-col items-center justify-center relative px-6 bg-black">
         {noMore ? (
           <div className="text-center max-w-sm">
             <h2 className="text-2xl font-semibold mb-2">No more recommendations</h2>
