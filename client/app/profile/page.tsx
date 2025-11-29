@@ -249,7 +249,7 @@ const ProfilePage = () => {
           {
             onSuccess: () => {
               toast.success("Profile minted successfully!");
-              router.push("/app/recommendations");
+              router.push("/recommendations");
             },
             onError: (err) => {
               const message = err instanceof Error ? err.message : "Failed to execute transaction.";
