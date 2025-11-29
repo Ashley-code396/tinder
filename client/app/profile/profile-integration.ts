@@ -51,7 +51,7 @@ export const buildCreateWhitelistEntryTx = (packageId: string, gasBudget?: numbe
   const tx = new Transaction();
 
   const [cap, whitelist] = tx.moveCall({
-    target: `${packageId}::seal::create_whitelist_entry`,
+    target: `${packageId}::seal ::create_whitelist_entry`,
     arguments: []
   });
 

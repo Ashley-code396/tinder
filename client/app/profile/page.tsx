@@ -96,104 +96,92 @@ const ProfilePage = () => {
     );
   };
 
-  // Whitelist creation and execution is performed inside handleContinue (async context).
-  // Top-level await removed to avoid syntax error.
-
   const encryptAndUploadPhotos = async (
     photos: (File | string)[],
     packageId: string,
     whitelistId: string,
     sealClient: any
   ): Promise<{ quiltId: string; patchIds: Record<string, string> }> => {
+    // Only encrypt File objects (skip URLs)
     const encryptedFiles: File[] = [];
 
     for (let i = 0; i < photos.length; i++) {
       const photo = photos[i];
-
-      // Skip if it's already a string (existing URL)
       if (typeof photo === "string") continue;
 
       const arrayBuffer = await photo.arrayBuffer();
       const data = new Uint8Array(arrayBuffer);
 
-      // --- Generate a random id for each photo ---
+      // Generate unique ID for encryption
       const nonce = crypto.getRandomValues(new Uint8Array(5));
       const whitelistBytes = fromHex(whitelistId);
       const id = toHex(new Uint8Array([...whitelistBytes, ...nonce]));
 
-      const { encryptedBytes } = await encryptData(
-        sealClient,
-        packageId,
-        id,
-        data
-      );
+      const { encryptedBytes } = await encryptData(sealClient, packageId, id, data);
 
-      const encryptedFile = new File([new Uint8Array(encryptedBytes)], photo.name, { type: "application/octet-stream" });
+      // Create encrypted file
+      const encryptedFile = new File(
+        [new Uint8Array(encryptedBytes)],
+        photo.name,
+        { type: "application/octet-stream" }
+      );
       encryptedFiles.push(encryptedFile);
     }
 
-    // Upload all encrypted files at once after the loop
+    if (encryptedFiles.length === 0) {
+      throw new Error("No new files to upload");
+    }
+
+    // ✅ Upload all encrypted files at once as one quilt
     const { quiltId, patchIds } = await uploadQuiltToWalrus(encryptedFiles);
 
-
+    if (!quiltId) {
+      console.error("Upload response:", { encryptedFiles });
+      throw new Error("Upload failed: Quilt ID is undefined.");
+    }
 
     return { quiltId, patchIds };
-  }
-  const handlePhotoUpload = async (files: FileList | null) => {
-    if (!files || files.length === 0) return;
+  };
+  const handleUploadAllPhotos = async () => {
     if (!currentAccount) {
       toast.error("Connect your wallet first.");
       return;
     }
 
-    const newPhotos = Array.from(files);
-    setFormData((prev) => ({
-      ...prev,
-      photos: [...prev.photos, ...newPhotos],
-    }));
+    const filesToUpload = formData.photos.filter((p) => typeof p !== "string");
+    if (filesToUpload.length === 0) {
+      toast.error("No new photos selected to upload.");
+      return;
+    }
 
     try {
       setIsLoading(true);
 
-      // 0️⃣ Create whitelist entry for this upload
+      // 0️⃣ Create whitelist entry
       const { tx: whitelistTx, whitelistId: createdWhitelistId } = buildCreateWhitelistEntryTx(packageId, 1000000);
       await signAndExecute({ transaction: whitelistTx, account: currentAccount });
 
-      console.log("Whitelist ID for upload:", createdWhitelistId);
-
-      // After executing the whitelist transaction
       let whitelistObjectId: string | null = null;
-
       if (typeof createdWhitelistId === "string") {
         whitelistObjectId = createdWhitelistId;
-      } else if (createdWhitelistId?.NestedResult && createdWhitelistId.NestedResult.length > 0) {
+      } else if (createdWhitelistId?.NestedResult?.length > 0) {
         whitelistObjectId = String(createdWhitelistId.NestedResult[0]);
       }
-      else if (createdWhitelistId && typeof createdWhitelistId === "object" && "NestedResult" in createdWhitelistId) {
-        whitelistObjectId = String(createdWhitelistId.NestedResult[0]);
-      }
+
       if (!whitelistObjectId) {
-        console.warn("Whitelist ID:", createdWhitelistId); // debug actual returned object
         toast.error("Failed to get whitelist ID from transaction.");
         return;
       }
 
-      // 1️⃣ Encrypt and upload only the newly added files
+      // 1️⃣ Encrypt and upload all selected files
       const { quiltId, patchIds } = await encryptAndUploadPhotos(
-        newPhotos,
+        filesToUpload,
         packageId,
-        String(whitelistObjectId),
+        whitelistObjectId,
         sealClient
       );
 
-      if (!quiltId) {
-        toast.error("Upload failed: Quilt ID is undefined.");
-        return;
-      }
-
-      console.log("Walrus quiltId:", quiltId, "Patch IDs:", patchIds);
       toast.success(`Photos uploaded successfully! Quilt ID: ${quiltId}`);
-
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to upload photos.";
       toast.error(message);
@@ -201,6 +189,18 @@ const ProfilePage = () => {
       setIsLoading(false);
     }
   };
+
+
+  const handlePhotoSelection = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    const newPhotos = Array.from(files);
+    setFormData((prev) => ({
+      ...prev,
+      photos: [...prev.photos, ...newPhotos],
+    }));
+  };
+
 
 
   const handleContinue = async () => {
@@ -384,9 +384,11 @@ const ProfilePage = () => {
           <input
             type="file"
             accept="image/*"
-            onChange={(e) => handlePhotoUpload(e.target.files)}
+            multiple
+            onChange={(e) => handlePhotoSelection(e.target.files)}
             className="hidden"
           />
+
           <div className="w-8 h-8 bg-[#4DA2FF] rounded-full flex items-center justify-center text-white text-xl font-bold">
             +
           </div>
@@ -660,20 +662,30 @@ const ProfilePage = () => {
               <p>Upload 2 photos to start. Add 4 or more to make</p>
               <p>your profile stand out.</p>
             </div>
+            {/* Hidden file input stays for photo slot selection */}
             <input
               type="file"
               multiple
               accept="image/*"
-              onChange={(e) => handlePhotoUpload(e.target.files)}
+              onChange={(e) => {
+                const files = e.target.files;
+                if (files && files.length > 0) {
+                  handlePhotoSelection(files);
+                }
+              }}
               className="hidden"
               id="photo-upload"
             />
-            <label
-              htmlFor="photo-upload"
+
+            {/* Upload button now only uploads already selected photos */}
+            <button
+              type="button"
+              onClick={handleUploadAllPhotos}
               className="block w-full py-3 px-4 bg-[#4DA2FF] text-white rounded-lg text-center hover:bg-[#3A8CE6] transition-colors cursor-pointer"
             >
               Upload Photos
-            </label>
+            </button>
+
           </div>
         </div>
 
