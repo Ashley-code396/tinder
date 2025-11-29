@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
+import { Toaster } from "sonner";
 
 
 
@@ -18,6 +19,8 @@ export default function RootLayout({
     <html lang="en">
       <body
       >
+        <Toaster richColors position="top-center" />
+
         <Providers>{children}</Providers>
       </body>
     </html>

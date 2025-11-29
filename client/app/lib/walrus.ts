@@ -12,7 +12,14 @@ export async function uploadQuiltToWalrus(files: File[]): Promise<{ quiltId: str
   if (!res.ok) throw new Error("Quilt upload failed: " + res.status);
 
   const json = await res.json();
-  const quiltId = json.newlyCreated?.blobObject?.blobId;
+
+  // ✅ Correct path to quiltId
+  const quiltId = json.blobStoreResult?.newlyCreated?.blobObject?.blobId;
+  if (!quiltId) {
+    console.error("Upload response:", json);
+    throw new Error("Quilt upload failed: no Quilt ID returned");
+  }
+
   const stored = json.storedQuiltBlobs; // array of { identifier, quiltPatchId }
 
   const patchIds: Record<string, string> = {};

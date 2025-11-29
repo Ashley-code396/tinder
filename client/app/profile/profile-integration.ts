@@ -24,7 +24,7 @@ export const buildProfileMintTx = (params: ProfileMintTxParams): Transaction => 
   const tx = new Transaction();
 
   tx.moveCall({
-    target: `${TESTNET_PACKAGE_ID}::suitinder::mint_profile_nft`,
+    target: `${TESTNET_PACKAGE_ID}::profileNft::mint_profile_nft`,
     arguments: [
       tx.object(REGISTRY_OBJECT_ID),
       tx.pure.string(params.firstName),
@@ -51,7 +51,7 @@ export const buildCreateWhitelistEntryTx = (packageId: string, gasBudget?: numbe
   const tx = new Transaction();
 
   const [cap, whitelist] = tx.moveCall({
-    target: `${packageId}::suitinder::create_whitelist_entry`,
+    target: `${packageId}::seal::create_whitelist_entry`,
     arguments: []
   });
 

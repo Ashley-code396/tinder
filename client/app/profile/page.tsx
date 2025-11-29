@@ -8,6 +8,7 @@ import { encryptData, useSealClient } from "../lib/sealClient";
 import { uploadQuiltToWalrus } from "../lib/walrus";
 import { useNetworkVariable } from "../networkConfig";
 import { fromHex, toHex } from "@mysten/sui/utils";
+import { toast } from "sonner";
 
 interface FormData {
   firstName: string;
@@ -42,7 +43,6 @@ const ProfilePage = () => {
   const currentAccount = useCurrentAccount();
   const { mutate: signAndExecute } = useSignAndExecuteTransaction();
   const packageId = useNetworkVariable("packageId");
-  const registryId = useNetworkVariable("registryId");
   const sealClient = useSealClient();
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
@@ -59,7 +59,6 @@ const ProfilePage = () => {
   const [showInterestModal, setShowInterestModal] = useState(false);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
-  const [error, setError] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
 
   const relationshipOptions: RelationshipOption[] = [
@@ -136,44 +135,89 @@ const ProfilePage = () => {
     // Upload all encrypted files at once after the loop
     const { quiltId, patchIds } = await uploadQuiltToWalrus(encryptedFiles);
 
+
+
     return { quiltId, patchIds };
+  }
+  const handlePhotoUpload = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    if (!currentAccount) {
+      toast.error("Connect your wallet first.");
+      return;
+    }
+
+    const newPhotos = Array.from(files);
+    setFormData((prev) => ({
+      ...prev,
+      photos: [...prev.photos, ...newPhotos],
+    }));
+
+    try {
+      setIsLoading(true);
+
+      // 0️⃣ Create whitelist entry for this upload
+      const { tx: whitelistTx, whitelistId: createdWhitelistId } = buildCreateWhitelistEntryTx(packageId, 1000000);
+      await signAndExecute({ transaction: whitelistTx, account: currentAccount });
+
+      console.log("Whitelist ID for upload:", createdWhitelistId);
+
+      // After executing the whitelist transaction
+      let whitelistObjectId: string | null = null;
+
+      if (typeof createdWhitelistId === "string") {
+        whitelistObjectId = createdWhitelistId;
+      } else if (createdWhitelistId?.NestedResult && createdWhitelistId.NestedResult.length > 0) {
+        whitelistObjectId = String(createdWhitelistId.NestedResult[0]);
+      }
+      else if (createdWhitelistId && typeof createdWhitelistId === "object" && "NestedResult" in createdWhitelistId) {
+        whitelistObjectId = String(createdWhitelistId.NestedResult[0]);
+      }
+      if (!whitelistObjectId) {
+        console.warn("Whitelist ID:", createdWhitelistId); // debug actual returned object
+        toast.error("Failed to get whitelist ID from transaction.");
+        return;
+      }
+
+      // 1️⃣ Encrypt and upload only the newly added files
+      const { quiltId, patchIds } = await encryptAndUploadPhotos(
+        newPhotos,
+        packageId,
+        String(whitelistObjectId),
+        sealClient
+      );
+
+      if (!quiltId) {
+        toast.error("Upload failed: Quilt ID is undefined.");
+        return;
+      }
+
+      console.log("Walrus quiltId:", quiltId, "Patch IDs:", patchIds);
+      toast.success(`Photos uploaded successfully! Quilt ID: ${quiltId}`);
+
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to upload photos.";
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
 
   const handleContinue = async () => {
     if (!isFormValid()) {
-      setError("Please fill in all required fields and upload at least 2 photos.");
+      toast.error("Please fill in all required fields and upload at least 2 photos.");
       return;
     }
 
     if (!currentAccount) {
-      setError("No wallet connected. Please connect your wallet.");
+      toast.error("No wallet connected. Please connect your wallet.");
       return;
     }
 
     try {
-      // 0️⃣ Create whitelist entry
-      const { tx: whitelistTx, whitelistId: createdWhitelistId } = buildCreateWhitelistEntryTx(packageId, 1000000);
+      setIsLoading(true);
 
-      try {
-        await signAndExecute({ transaction: whitelistTx, account: currentAccount });
-        console.log("Whitelist ID:", createdWhitelistId);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to create whitelist entry.");
-        return;
-      }
-
-      // 1️⃣ Encrypt and upload photos
-      const { quiltId, patchIds } = await encryptAndUploadPhotos(
-        formData.photos,
-        packageId,
-        typeof createdWhitelistId === "string" ? createdWhitelistId : String(createdWhitelistId.NestedResult?.[0] ?? ""),
-        sealClient
-      );
-
-      console.log("Walrus quiltId:", quiltId);
-      console.log("Patch IDs:", patchIds);
-
-      // 2️⃣ Build mint params
+      // Build mint params
       const mintParams: ProfileMintParams = {
         firstName: formData.firstName,
         email: formData.email,
@@ -190,14 +234,11 @@ const ProfilePage = () => {
       };
 
       if (!validateMintParams(mintParams)) {
-        setError("Invalid input data. Please check your inputs (e.g., valid birthday).");
+        toast.error("Invalid input data. Please check your inputs (e.g., valid birthday).");
         return;
       }
 
-      setIsLoading(true);
-      setError("");
-
-      // 3️⃣ Execute mint transaction
+      // Execute mint transaction
       try {
         const tx = buildProfileMintTx({
           ...mintParams,
@@ -206,17 +247,25 @@ const ProfilePage = () => {
         await signAndExecute(
           { transaction: tx, account: currentAccount },
           {
-            onSuccess: () => router.push("/app/recommendations"),
-            onError: (err) => setError(err.message || "Failed to execute transaction."),
+            onSuccess: () => {
+              toast.success("Profile minted successfully!");
+              router.push("/app/recommendations");
+            },
+            onError: (err) => {
+              const message = err instanceof Error ? err.message : "Failed to execute transaction.";
+              toast.error(message);
+            },
           }
         );
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An error occurred while processing the transaction.");
-      } finally {
-        setIsLoading(false);
+        const message = err instanceof Error ? err.message : "An error occurred while processing the transaction.";
+        toast.error(message);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred while creating your profile.");
+      const message = err instanceof Error ? err.message : "An unexpected error occurred while creating your profile.";
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -272,15 +321,7 @@ const ProfilePage = () => {
     }));
   };
 
-  const handlePhotoUpload = (files: FileList | null) => {
-    if (files) {
-      const newPhotos = Array.from(files);
-      setFormData((prev) => ({
-        ...prev,
-        photos: [...prev.photos, ...newPhotos].slice(0, 6),
-      }));
-    }
-  };
+
 
   const handleRemovePhoto = (index: number) => {
     const updatedPhotos = [...formData.photos];
@@ -382,11 +423,6 @@ const ProfilePage = () => {
       <div className="max-w-6xl mx-auto px-4 py-8">
         <h1 className="text-4xl font-bold text-center mb-12">Create account</h1>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-500/20 text-red-400 border border-red-500/50 rounded-lg text-center">
-            {error}
-          </div>
-        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Left Column - Form */}
