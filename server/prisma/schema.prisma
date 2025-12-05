@@ -8,7 +8,31 @@ datasource db {
   provider = "postgresql"
 }
 
-model User{
-  id String @id  @default(uuid())
+model UserProfile {
+  id                String        @id @default(uuid())
+  nftObjectId       String        @unique     
+  ownerAddress      String                     
+  firstName         String
+  email             String
+  birthday          DateTime
+  gender            String
+  showGender        Boolean
+  interestedIn      String
+  quiltId           String?                    
+  photos            Json?                    
+  relationshipIntents RelationshipIntent[]     
+  interests         Interest[]                
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+}
 
+model RelationshipIntent {
+  id        String        @id @default(uuid())
+  key       String        @unique         // "long-term", "new-friends" etc.
+  profiles  UserProfile[]
+}
+model Interest {
+  id        String        @id @default(uuid())
+  key       String        @unique       // "spa", "music", "travel"
+  profiles  UserProfile[]
 }
