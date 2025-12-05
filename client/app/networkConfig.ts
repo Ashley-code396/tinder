@@ -1,6 +1,6 @@
 import { createNetworkConfig } from "@mysten/dapp-kit"  ;
 import { getFullnodeUrl } from "@mysten/sui/client";
-import { TESTNET_PACKAGE_ID ,REGISTRY_OBJECT_ID } from "./constants";
+import { TESTNET_PACKAGE_ID } from "./constants";
 
 
 const {networkConfig, useNetworkVariable, useNetworkVariables} = createNetworkConfig({
@@ -8,7 +8,7 @@ const {networkConfig, useNetworkVariable, useNetworkVariables} = createNetworkCo
         url: getFullnodeUrl('testnet'),
         variables: {
             packageId: TESTNET_PACKAGE_ID,
-            registryId: REGISTRY_OBJECT_ID,
+            
         },
     
     }

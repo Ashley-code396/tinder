@@ -1,5 +1,5 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { TESTNET_PACKAGE_ID, REGISTRY_OBJECT_ID } from "../constants";
+import { TESTNET_PACKAGE_ID } from "../constants";
 
 export interface ProfileMintParams {
   firstName: string;
@@ -26,7 +26,6 @@ export const buildProfileMintTx = (params: ProfileMintTxParams): Transaction => 
   tx.moveCall({
     target: `${TESTNET_PACKAGE_ID}::profileNft::mint_profile_nft`,
     arguments: [
-      tx.object(REGISTRY_OBJECT_ID),
       tx.pure.string(params.firstName),
       tx.pure.string(params.email),
       tx.pure.u64(BigInt(params.birthday.month)),

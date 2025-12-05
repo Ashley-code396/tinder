@@ -1,20 +1,9 @@
 module suitinder::profileNft;
 
-use sui::table::{Self, Table};
 use std::string::String;
-//use sui::url::Url;
-use sui::package::Publisher;
+use sui::event;
 
-const EProfileAlreadyExists: u64 = 1;
-
-public struct ProfileRegistry has key{
-    id: UID,
-    publisher: Publisher,
-    profiles: Table<address, ID>
-    
-}
-
-public struct ProfileNFT has key{
+public struct ProfileNFT has key, store {
     id: UID,
     first_name: String,
     email: String,
@@ -28,27 +17,19 @@ public struct ProfileNFT has key{
     interests: vector<String>,
     //photos: vector<Url>,
 }
-
-public struct PROFILENFT has drop{}
-
-
-fun init(otw: PROFILENFT, ctx: &mut TxContext){
-
-    let publisher = sui::package::claim(otw, ctx);
-
-    let profile_registry = ProfileRegistry{
-        id: object::new(ctx),
-        publisher: publisher,
-        profiles: table::new<address, ID>(ctx)
-    };
-
-    transfer::share_object(profile_registry);
-     
+public struct OwnerCap has key {
+    id: UID,
+    profile_nft_id: ID,
 }
 
+public struct ProfileNFTMinted has copy, drop {
+    profile_nft_id: ID,
+    creator: address,
+    first_name: String,
+}
 
+#[allow(lint(self_transfer))]
 public fun mint_profile_nft(
-    profile_registry: &mut ProfileRegistry,
     first_name: String,
     email: String,
     birthday_month: u64,
@@ -60,13 +41,9 @@ public fun mint_profile_nft(
     relationship_intent: vector<String>,
     interests: vector<String>,
     //photos: vector<Url>,
-    ctx: &mut TxContext
-
-){
-
-    assert!(!table::contains(&profile_registry.profiles, ctx.sender()), EProfileAlreadyExists);
-            
-    let profile_nft = ProfileNFT{
+    ctx: &mut TxContext,
+) {
+    let profile_nft = ProfileNFT {
         id: object::new(ctx),
         first_name,
         email,
@@ -77,21 +54,39 @@ public fun mint_profile_nft(
         show_gender,
         interested_in,
         relationship_intent,
-        interests
+        interests,
         //photos
-
     };
+    let owner_cap = OwnerCap {
+        id: object::new(ctx),
+        profile_nft_id: object::id(&profile_nft),
+    };
+    event::emit(ProfileNFTMinted {
+        profile_nft_id: object::id(&profile_nft),
+        creator: ctx.sender(),
+        first_name: profile_nft.first_name,
+    });
 
-    let profile_nft_id = object::id(&profile_nft);
-    table::add(&mut profile_registry.profiles, ctx.sender(), profile_nft_id);
-
-
-    transfer::transfer(profile_nft, ctx.sender());
-
-    
-
+    transfer::public_transfer(profile_nft, ctx.sender());
+    transfer::transfer(owner_cap, ctx.sender())
 }
 
+public fun burn_profile_nft(cap: OwnerCap, profile_nft: ProfileNFT) {
+    let OwnerCap { id, profile_nft_id: _ } = cap;
+    id.delete();
 
-
-
+    let ProfileNFT {
+        id,
+        first_name: _,
+        email: _,
+        birthday_month: _,
+        birthday_day: _,
+        birthday_year: _,
+        gender: _,
+        show_gender: _,
+        interested_in: _,
+        relationship_intent: _,
+        interests: _,
+    } = profile_nft;
+    id.delete();
+}
