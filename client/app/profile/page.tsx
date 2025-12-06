@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useCurrentAccount, useSignAndExecuteTransaction } from "@mysten/dapp-kit";
-import { buildProfileMintTx, validateMintParams, ProfileMintParams, buildCreateWhitelistEntryTx } from "./profile-integration";
+import { ProfileMintParams} from "./types";
 import { encryptData, useSealClient } from "../lib/sealClient";
 import { uploadQuiltToWalrus } from "../lib/walrus";
 import { useNetworkVariable } from "../networkConfig";
@@ -143,52 +143,56 @@ const ProfilePage = () => {
     return { quiltId, patchIds };
   };
   const handleUploadAllPhotos = async () => {
-    if (!currentAccount) {
-      toast.error("Connect your wallet first.");
+  if (!currentAccount) {
+    toast.error("Connect your wallet first.");
+    return;
+  }
+
+  const filesToUpload = formData.photos.filter((p) => typeof p !== "string");
+  if (filesToUpload.length === 0) {
+    toast.error("No new photos selected to upload.");
+    return;
+  }
+
+  try {
+    setIsLoading(true);
+
+    // 0️⃣ Request backend to create whitelist entry
+    const res = await fetch("/api/create-whitelist-entry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || "Failed to create whitelist entry.");
+    }
+
+    const { tx: whitelistTxJSON, whitelistId } = await res.json();
+
+    // 1️⃣ Sign and execute the whitelist transaction
+    await signAndExecute({ transaction: whitelistTxJSON, account: currentAccount });
+
+    if (!whitelistId) {
+      toast.error("Failed to get whitelist ID from backend.");
       return;
     }
 
-    const filesToUpload = formData.photos.filter((p) => typeof p !== "string");
-    if (filesToUpload.length === 0) {
-      toast.error("No new photos selected to upload.");
-      return;
-    }
+    // 2️⃣ Encrypt and upload photos
+    const { quiltId, patchIds } = await encryptAndUploadPhotos(
+      filesToUpload,
+      packageId,
+      whitelistId,
+      sealClient
+    );
 
-    try {
-      setIsLoading(true);
-
-      // 0️⃣ Create whitelist entry
-      const { tx: whitelistTx, whitelistId: createdWhitelistId } = buildCreateWhitelistEntryTx(packageId, 1000000);
-      await signAndExecute({ transaction: whitelistTx, account: currentAccount });
-
-      let whitelistObjectId: string | null = null;
-      if (typeof createdWhitelistId === "string") {
-        whitelistObjectId = createdWhitelistId;
-      } else if (createdWhitelistId?.NestedResult?.length > 0) {
-        whitelistObjectId = String(createdWhitelistId.NestedResult[0]);
-      }
-
-      if (!whitelistObjectId) {
-        toast.error("Failed to get whitelist ID from transaction.");
-        return;
-      }
-
-      // 1️⃣ Encrypt and upload all selected files
-      const { quiltId, patchIds } = await encryptAndUploadPhotos(
-        filesToUpload,
-        packageId,
-        whitelistObjectId,
-        sealClient
-      );
-
-      toast.success(`Photos uploaded successfully! Quilt ID: ${quiltId}`);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to upload photos.";
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    toast.success(`Photos uploaded successfully! Quilt ID: ${quiltId}`);
+  } catch (err: any) {
+    toast.error(err.message || "Failed to upload photos.");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
 
   const handlePhotoSelection = (files: FileList | null) => {
@@ -204,70 +208,70 @@ const ProfilePage = () => {
 
 
   const handleContinue = async () => {
-    if (!isFormValid()) {
-      toast.error("Please fill in all required fields and upload at least 2 photos.");
-      return;
+  if (!isFormValid()) {
+    toast.error("Please fill in all required fields and upload at least 2 photos.");
+    return;
+  }
+
+  if (!currentAccount) {
+    toast.error("No wallet connected. Please connect your wallet.");
+    return;
+  }
+
+  try {
+    setIsLoading(true);
+
+    const mintParams: ProfileMintParams = {
+      firstName: formData.firstName,
+      email: formData.email,
+      birthday: {
+        month: parseInt(formData.birthday.month),
+        day: parseInt(formData.birthday.day),
+        year: parseInt(formData.birthday.year),
+      },
+      gender: formData.gender!,
+      showGender: formData.showGender,
+      interestedIn: formData.interestedIn!,
+      relationshipIntent: formData.relationshipIntent,
+      interests: formData.interests,
+    };
+
+    
+
+    // ✅ Call backend to build transaction
+    const response = await fetch("/api/build-profile-tx", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(mintParams),
+    });
+
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error || "Failed to build transaction.");
     }
 
-    if (!currentAccount) {
-      toast.error("No wallet connected. Please connect your wallet.");
-      return;
-    }
+    const data = await response.json();
+    const txJSON = data.tx;
 
-    try {
-      setIsLoading(true);
-
-      // Build mint params
-      const mintParams: ProfileMintParams = {
-        firstName: formData.firstName,
-        email: formData.email,
-        birthday: {
-          month: parseInt(formData.birthday.month),
-          day: parseInt(formData.birthday.day),
-          year: parseInt(formData.birthday.year),
+    // Execute the transaction
+    await signAndExecute(
+      { transaction: txJSON, account: currentAccount },
+      {
+        onSuccess: () => {
+          toast.success("Profile minted successfully!");
+          router.push("/recommendations");
         },
-        gender: formData.gender!,
-        showGender: formData.showGender,
-        interestedIn: formData.interestedIn!,
-        relationshipIntent: formData.relationshipIntent,
-        interests: formData.interests,
-      };
-
-      if (!validateMintParams(mintParams)) {
-        toast.error("Invalid input data. Please check your inputs (e.g., valid birthday).");
-        return;
+        onError: (err) => {
+          toast.error((err as Error)?.message || "Failed to execute transaction.");
+        },
       }
-
-      // Execute mint transaction
-      try {
-        const tx = buildProfileMintTx({
-          ...mintParams,
-          gasBudget: 100000000,
-        });
-        await signAndExecute(
-          { transaction: tx, account: currentAccount },
-          {
-            onSuccess: () => {
-              toast.success("Profile minted successfully!");
-              router.push("/recommendations");
-            },
-            onError: (err) => {
-              const message = err instanceof Error ? err.message : "Failed to execute transaction.";
-              toast.error(message);
-            },
-          }
-        );
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "An error occurred while processing the transaction.";
-        toast.error(message);
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "An unexpected error occurred while creating your profile.";
-      toast.error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    );
+  } catch (err) {
+    toast.error((err as Error)?.message || "An unexpected error occurred.");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
 
   const handleInputChange = (field: keyof FormData, value: any) => {
