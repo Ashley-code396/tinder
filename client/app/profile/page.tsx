@@ -9,6 +9,7 @@ import { uploadQuiltToWalrus } from "../lib/walrus";
 import { useNetworkVariable } from "../networkConfig";
 import { fromHex, toHex } from "@mysten/sui/utils";
 import { toast } from "sonner";
+import { BACKEND_URL } from "../constants";
 
 interface FormData {
   firstName: string;
@@ -158,8 +159,9 @@ const ProfilePage = () => {
     setIsLoading(true);
 
     // 0️⃣ Request backend to create whitelist entry
-    const res = await fetch("/api/create-whitelist-entry", {
+    const res = await fetch(`${BACKEND_URL}/api/whitelist/create-whitelist-entry`, {
       method: "POST",
+      credentials: "include", 
       headers: { "Content-Type": "application/json" },
     });
 
@@ -239,7 +241,7 @@ const ProfilePage = () => {
     
 
     // ✅ Call backend to build transaction
-    const response = await fetch("/api/build-profile-tx", {
+    const response = await fetch(`${BACKEND_URL}/api/profile/build-profile-tx`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(mintParams),

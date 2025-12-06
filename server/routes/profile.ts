@@ -4,13 +4,22 @@ import { ProfileMintParams } from "../../client/app/profile/types";
 
 const router = express.Router();
 
+
+// Handle preflight for this router specifically
+router.options("*", (req, res) => {
+  res.header("Access-Control-Allow-Origin", process.env.FRONTEND_URL);
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
+  res.sendStatus(204);
+});
+
 router.post("/build-profile-tx", async (req: Request, res: Response) => {
   try {
-    const mintParams: ProfileMintParams = req.body; 
+    const mintParams: ProfileMintParams = req.body;
     const tx = buildProfileMintTx(mintParams);
 
-    res.json({ tx: tx.toJSON() });
-    
+    res.json({ tx });
+
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
   }

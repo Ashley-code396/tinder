@@ -11,9 +11,8 @@ router.post("/create-whitelist-entry", async (req, res) => {
         const { tx, whitelistId } = buildCreateWhitelistEntryTx(packageId);
 
 
-        const txJSON = tx.toJSON();
 
-        res.json({ tx: txJSON, whitelistId });
+        res.json({ tx, whitelistId });
     } catch (err: any) {
         console.error("Failed to create whitelist entry:", err);
         res.status(500).json({ error: err.message || "Failed to create whitelist entry" });

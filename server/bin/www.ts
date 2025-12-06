@@ -1,14 +1,13 @@
 #!/usr/bin/env node
+import http from "http";
+import app from "../app"; // use ES import to match your app.ts
 
-var app = require('../app');
-var http = require('http');
+const port = process.env.PORT || 3009;
+app.set("port", port);
 
-var port = process.env.PORT || 3009;
-app.set('port', port);
-
-var server = http.createServer(app);
+const server = http.createServer(app);
 
 server.listen(port);
-server.on('listening', () => {
+server.on("listening", () => {
   console.log(`Server listening on port ${port}`);
 });

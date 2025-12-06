@@ -1,1 +1,2 @@
 export const TESTNET_PACKAGE_ID= '0x67b5a31cfd2d9a34ba046be6fc4490bbbf66ab7a3126dffe9f9cd3a7f82d0e7b';
+export const BACKEND_URL=process.env.NEXT_PUBLIC_BACKEND_URL;
