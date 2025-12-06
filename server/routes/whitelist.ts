@@ -1,9 +1,10 @@
 import express from "express";
 import { buildCreateWhitelistEntryTx } from "../services/sui/mint";
-import { useNetworkVariable } from "../../client/app/networkConfig";
+import { packageId } from "../config/network";
+
 
 const router = express.Router();
-const packageId = useNetworkVariable("packageId");
+
 
 router.post("/create-whitelist-entry", async (req, res) => {
     try {

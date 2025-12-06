@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "ts-node ./bin/www.ts"
   },
   "dependencies": {
     "@mysten/sui": "^1.45.2",
@@ -22,6 +22,8 @@
     "@types/express": "^5.0.6",
     "@types/node": "^24.10.1",
     "@types/pg": "^8.15.6",
-    "prisma": "^7.0.1"
+    "prisma": "^7.0.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   }
 }
