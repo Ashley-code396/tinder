@@ -253,13 +253,13 @@ const ProfilePage = () => {
     }
 
     const data = await response.json();
-    const txBytes = data.txBytes;
-    console.log("📦 Received txBytes:", txBytes);
+    const txBytesBase64 = data.txBytesBase64;
+    console.log("📦 Received txBytes:", txBytesBase64);
 
 
     // Execute the transaction
     await signAndExecute(
-      { transaction: txBytes, account: currentAccount },
+      { transaction: txBytesBase64, account: currentAccount },
       {
         onSuccess: () => {
           toast.success("Profile minted successfully!");

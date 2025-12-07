@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import { buildProfileMintTx } from "../services/sui/mint";
 import { ProfileMintParams } from "../../client/app/profile/types";
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
+import { base64String } from "@mysten/sui/dist/cjs/bcs/bcs";
 
 const client = new SuiClient({ url: getFullnodeUrl("testnet") });
 
@@ -23,12 +24,16 @@ router.post("/build-profile-tx", async (req: Request, res: Response) => {
 
     const txBytes = await tx.build({
       client,
-      onlyTransactionKind: true
-    })
+    });
 
     console.log("📦 Serialized tx bytes:", txBytes);
 
-    res.json({ txBytes });
+    const txBytesBase64 = Buffer.from(txBytes).toString("base64");
+    console.log("📦 Serialized tx bytes (base64):", txBytesBase64);
+
+    
+
+    res.json({ txBytesBase64 });
 
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
