@@ -21,6 +21,7 @@ router.post("/build-profile-tx", async (req: Request, res: Response) => {
   try {
     const mintParams: ProfileMintParams = req.body;
     const tx = buildProfileMintTx(mintParams);
+    tx.setSender(mintParams.sender); 
 
     const txBytes = await tx.build({
       client,

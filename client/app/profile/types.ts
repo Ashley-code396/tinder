@@ -11,4 +11,6 @@ export interface ProfileMintParams {
   interestedIn: string;
   relationshipIntent: string[];
   interests: string[];
+  sender: string;
+
 }

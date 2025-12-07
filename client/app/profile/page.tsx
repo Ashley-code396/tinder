@@ -237,6 +237,7 @@ const ProfilePage = () => {
       interestedIn: formData.interestedIn!,
       relationshipIntent: formData.relationshipIntent,
       interests: formData.interests,
+      sender: currentAccount.address
     };
     
 
