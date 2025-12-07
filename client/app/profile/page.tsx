@@ -170,10 +170,10 @@ const ProfilePage = () => {
       throw new Error(errData.error || "Failed to create whitelist entry.");
     }
 
-    const { tx: whitelistTxJSON, whitelistId } = await res.json();
+    const { tx: txBytes, whitelistId } = await res.json();
 
     // 1️⃣ Sign and execute the whitelist transaction
-    await signAndExecute({ transaction: whitelistTxJSON, account: currentAccount });
+    await signAndExecute({ transaction: txBytes, account: currentAccount });
 
     if (!whitelistId) {
       toast.error("Failed to get whitelist ID from backend.");
@@ -210,6 +210,7 @@ const ProfilePage = () => {
 
 
   const handleContinue = async () => {
+
   if (!isFormValid()) {
     toast.error("Please fill in all required fields and upload at least 2 photos.");
     return;
@@ -237,7 +238,6 @@ const ProfilePage = () => {
       relationshipIntent: formData.relationshipIntent,
       interests: formData.interests,
     };
-
     
 
     // ✅ Call backend to build transaction
@@ -253,11 +253,13 @@ const ProfilePage = () => {
     }
 
     const data = await response.json();
-    const txJSON = data.tx;
+    const txBytes = data.txBytes;
+    console.log("📦 Received txBytes:", txBytes);
+
 
     // Execute the transaction
     await signAndExecute(
-      { transaction: txJSON, account: currentAccount },
+      { transaction: txBytes, account: currentAccount },
       {
         onSuccess: () => {
           toast.success("Profile minted successfully!");

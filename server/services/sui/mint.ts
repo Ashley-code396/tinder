@@ -4,7 +4,7 @@ import { TESTNET_PACKAGE_ID } from "../../../client/app/constants";
 import { ProfileMintParams } from "../../../client/app/profile/types";
 
 export const buildProfileMintTx = (params: ProfileMintParams, gasBudget = 1000000): Transaction => {
-    const tx = new Transaction();
+   const tx = new Transaction();
 
     tx.moveCall({
         target: `${TESTNET_PACKAGE_ID}::profileNft::mint_profile_nft`,
@@ -21,8 +21,10 @@ export const buildProfileMintTx = (params: ProfileMintParams, gasBudget = 100000
             tx.pure.vector('string', params.interests),
         ],
     });
-
+    
     tx.setGasBudget(gasBudget);
+
+
     return tx;
 };
 

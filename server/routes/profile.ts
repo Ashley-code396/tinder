@@ -1,6 +1,9 @@
 import express, { Request, Response } from "express";
 import { buildProfileMintTx } from "../services/sui/mint";
 import { ProfileMintParams } from "../../client/app/profile/types";
+import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
+
+const client = new SuiClient({ url: getFullnodeUrl("testnet") });
 
 const router = express.Router();
 
@@ -18,7 +21,14 @@ router.post("/build-profile-tx", async (req: Request, res: Response) => {
     const mintParams: ProfileMintParams = req.body;
     const tx = buildProfileMintTx(mintParams);
 
-    res.json({ tx });
+    const txBytes = await tx.build({
+      client,
+      onlyTransactionKind: true
+    })
+
+    console.log("📦 Serialized tx bytes:", txBytes);
+
+    res.json({ txBytes });
 
   } catch (err) {
     res.status(500).json({ error: (err as Error).message });
