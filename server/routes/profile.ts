@@ -1,11 +1,7 @@
 import express, { Request, Response } from "express";
 import { buildProfileMintTx } from "../services/sui/mint";
 import { ProfileMintParams } from "../../client/app/profile/types";
-import { getFullnodeUrl, SuiClient } from "@mysten/sui/client";
-import { base64String } from "@mysten/sui/dist/cjs/bcs/bcs";
-
-const client = new SuiClient({ url: getFullnodeUrl("testnet") });
-
+import { client } from "./../services/sui/provider"
 const router = express.Router();
 
 
