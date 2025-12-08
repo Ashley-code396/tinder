@@ -13,9 +13,7 @@ import { FRONTEND_URL } from "./config/index";
 import indexRouter from "./routes/index";
 import profileRouter from "./routes/profile";
 import whitelistRouter from "./routes/whitelist";
-import { startProfileEventCron } from "./cron/profileEventCron";
 
-startProfileEventCron();
 
 
 const app = express();

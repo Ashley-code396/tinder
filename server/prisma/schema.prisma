@@ -37,3 +37,9 @@ model Interest {
   key       String        @unique       // "spa", "music", "travel"
   profiles  UserProfile[]
 }
+model EventCursor {
+  id        String  @id       
+  txDigest  String
+  eventSeq  String
+  updatedAt DateTime @updatedAt
+}

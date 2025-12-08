@@ -19,7 +19,7 @@ export const fetchProfileEvents = async ({
   });
 
   return {
-    data: eventsResult.data,       // full raw SuiEvent[]
+    data: eventsResult.data,       
     nextCursor: eventsResult.nextCursor,
     hasNextPage: eventsResult.hasNextPage,
   };

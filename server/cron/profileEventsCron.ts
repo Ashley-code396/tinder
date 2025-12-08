@@ -1,12 +1,23 @@
 import cron from "node-cron";
-import { fetchProfileEvents } from "../services/events/profileEvents";
-import { saveEventsToDB } from "../services/db/saveEvents";
+import { fetchProfileEvents } from "../services/sui/profileEventsFetcher";
+import { saveEventsToDB } from "../services/db/saveEvent";
+import { prisma} from "prisma/config";
 
-// GLOBAL cursor so cron knows where it left off
-let cursor: string | null = null;
 
-export const startProfileEventCron = () => {
+
+const EVENT_ID = "profileNft"; // identifier for this event type
+
+export const startProfileEventCron = async () => {
   console.log("⏳ Starting Sui Profile Event Cron Job...");
+
+  // Load last cursor from DB
+  const lastCursorRecord = await prisma.eventCursor.findUnique({
+    where: { id: EVENT_ID },
+  });
+
+  let cursor = lastCursorRecord
+    ? { txDigest: lastCursorRecord.txDigest, eventSeq: lastCursorRecord.eventSeq }
+    : null;
 
   // Run every 30 seconds
   cron.schedule("*/30 * * * * *", async () => {
@@ -23,12 +34,18 @@ export const startProfileEventCron = () => {
 
         await saveEventsToDB(result.data);
 
-        // Update cursor to continue from last event
+        // Update cursor to DB for persistence
         cursor = result.nextCursor;
+        if (cursor) {
+          await prisma.eventCursor.upsert({
+            where: { id: EVENT_ID },
+            update: { txDigest: cursor.txDigest, eventSeq: cursor.eventSeq },
+            create: { id: EVENT_ID, txDigest: cursor.txDigest, eventSeq: cursor.eventSeq },
+          });
+        }
       } else {
         console.log("⚪ No new events");
       }
-
     } catch (error) {
       console.error("❌ Cron job error:", error);
     }
