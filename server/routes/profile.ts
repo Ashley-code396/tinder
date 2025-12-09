@@ -23,10 +23,10 @@ router.post("/build-profile-tx", async (req: Request, res: Response) => {
       client,
     });
 
-    console.log("📦 Serialized tx bytes:", txBytes);
+    //console.log("📦 Serialized tx bytes:", txBytes);
 
     const txBytesBase64 = Buffer.from(txBytes).toString("base64");
-    console.log("📦 Serialized tx bytes (base64):", txBytesBase64);
+    //console.log("📦 Serialized tx bytes (base64):", txBytesBase64);
 
     
 

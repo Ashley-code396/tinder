@@ -11,7 +11,7 @@ export const fetchProfileEvents = async ({
 }) => {
   const eventsResult = await client.queryEvents({
     query: {
-      MoveEventType: `${packageId}::profileNft::ProfileMinted`,
+      MoveEventType: `${packageId}::profileNft::ProfileNFTMinted`,
     },
     cursor, 
     limit,

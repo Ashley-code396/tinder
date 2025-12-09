@@ -3,7 +3,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { TESTNET_PACKAGE_ID } from "../../../client/app/constants";
 import { ProfileMintParams } from "../../../client/app/profile/types";
 
-export const buildProfileMintTx = (params: ProfileMintParams, gasBudget = 1000000): Transaction => {
+export const buildProfileMintTx = (params: ProfileMintParams): Transaction => {
    const tx = new Transaction();
 
     tx.moveCall({
@@ -22,7 +22,7 @@ export const buildProfileMintTx = (params: ProfileMintParams, gasBudget = 100000
         ],
     });
     
-    tx.setGasBudget(gasBudget);
+
 
 
     return tx;

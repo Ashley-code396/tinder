@@ -1,11 +1,12 @@
+import dotenv from "dotenv";
+dotenv.config();
 import createError from "http-errors";
 import express, { Request, Response, NextFunction } from "express";
 import path from "path";
 import cookieParser from "cookie-parser";
 import logger from "morgan";
 import cors from "cors";
-import dotenv from "dotenv";
-dotenv.config();
+
 
 import { FRONTEND_URL } from "./config/index";
 
@@ -14,6 +15,9 @@ import indexRouter from "./routes/index";
 import profileRouter from "./routes/profile";
 import whitelistRouter from "./routes/whitelist";
 
+
+// Import cron job
+import { startProfileEventCron } from "./cron/profileEventsCron";
 
 
 const app = express();
@@ -63,5 +67,12 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     },
   });
 });
+
+//Start cron job
+
+startProfileEventCron()
+  .then(() => console.log("✅ Profile event cron started"))
+  .catch((err) => console.error("❌ Failed to start profile event cron:", err));
+
 
 export default app;
