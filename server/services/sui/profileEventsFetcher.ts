@@ -1,4 +1,4 @@
-import { EventId } from "@mysten/sui/dist/cjs/client";
+import { EventId } from "@mysten/sui/client";
 import { client } from "./../sui/provider";
 import { packageId } from "../../config/network";
 

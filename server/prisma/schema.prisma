@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -9,37 +8,53 @@ datasource db {
 }
 
 model UserProfile {
-  id                String        @id @default(uuid())
-  nftObjectId       String        @unique     
-  ownerAddress      String                     
-  firstName         String
-  email             String
-  birthday          DateTime
-  gender            String
-  showGender        Boolean
-  interestedIn      String
-  quiltId           String?                    
-  photos            Json?                    
-  relationshipIntents RelationshipIntent[]     
-  interests         Interest[]  
-  sender            String              
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  id                  String               @id @default(uuid())
+  nftObjectId         String               @unique
+  ownerAddress        String
+  firstName           String
+  email               String
+  birthday            DateTime
+  gender              String
+  showGender          Boolean
+  interestedIn        String
+  quiltId             String?
+  photos              Json?
+  sender              String
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  profileEvents       ProfileEvent[]
+  interests           Interest[]           @relation("InterestToUserProfile")
+  relationshipIntents RelationshipIntent[] @relation("RelationshipIntentToUserProfile")
 }
 
 model RelationshipIntent {
-  id        String        @id @default(uuid())
-  key       String        @unique         // "long-term", "new-friends" etc.
-  profiles  UserProfile[]
+  id       String        @id @default(uuid())
+  key      String        @unique
+  profiles UserProfile[] @relation("RelationshipIntentToUserProfile")
 }
+
 model Interest {
-  id        String        @id @default(uuid())
-  key       String        @unique       // "spa", "music", "travel"
-  profiles  UserProfile[]
+  id       String        @id @default(uuid())
+  key      String        @unique
+  profiles UserProfile[] @relation("InterestToUserProfile")
 }
+
 model EventCursor {
-  id        String  @id       
+  id        String   @id
   txDigest  String
   eventSeq  String
   updatedAt DateTime @updatedAt
+}
+
+model ProfileEvent {
+  id        String       @id @default(uuid())
+  digest    String       @unique
+  type      String
+  sender    String
+  payload   Json
+  timestamp BigInt
+  userId    String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  user      UserProfile? @relation(fields: [userId], references: [id])
 }

@@ -1,7 +1,7 @@
 import cron from "node-cron";
 import { fetchProfileEvents } from "../services/sui/profileEventsFetcher";
 import { saveEventsToDB } from "../services/db/saveEvent";
-import prisma from "prisma/config";
+import { prisma } from "../prisma/prismaClient";
 
 
 
@@ -20,7 +20,7 @@ export const startProfileEventCron = async () => {
     : null;
 
   // Run every 30 seconds
-  cron.schedule("*/30 * * * * *", async () => {
+  cron.schedule("*/15 * * * * *", async () => {
     try {
       console.log("🔍 Checking for new profile events...");
 
@@ -28,6 +28,7 @@ export const startProfileEventCron = async () => {
         cursor,
         limit: 50,
       });
+      console.log("✅ Fetched profile events:", JSON.stringify(result, null, 2));
 
       if (result.data.length > 0) {
         console.log(`📥 Found ${result.data.length} new events`);
