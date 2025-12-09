@@ -8,7 +8,7 @@ import { prisma } from "../prisma/prismaClient";
 const EVENT_ID = "profileNft";
 
 export const startProfileEventCron = async () => {
-  console.log("⏳ Starting Sui Profile Event Cron Job...");
+  console.log("Starting Sui Profile Event Cron Job...");
 
   // Load last cursor from DB
   const lastCursorRecord = await prisma.eventCursor.findUnique({
@@ -22,16 +22,16 @@ export const startProfileEventCron = async () => {
   // Run every 30 seconds
   cron.schedule("*/15 * * * * *", async () => {
     try {
-      console.log("🔍 Checking for new profile events...");
+      console.log("Checking for new profile events...");
 
       const result = await fetchProfileEvents({
         cursor,
         limit: 50,
       });
-      console.log("✅ Fetched profile events:", JSON.stringify(result, null, 2));
+      console.log("Fetched profile events:", JSON.stringify(result, null, 2));
 
       if (result.data.length > 0) {
-        console.log(`📥 Found ${result.data.length} new events`);
+        console.log(`Found ${result.data.length} new events`);
 
         await saveEventsToDB(result.data);
 
@@ -45,10 +45,10 @@ export const startProfileEventCron = async () => {
           });
         }
       } else {
-        console.log("⚪ No new events");
+        console.log("No new events");
       }
     } catch (error) {
-      console.error("❌ Cron job error:", error);
+      console.error("Cron job error:", error);
     }
   });
 };

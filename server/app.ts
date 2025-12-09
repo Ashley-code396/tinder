@@ -71,8 +71,8 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 //Start cron job
 
 startProfileEventCron()
-  .then(() => console.log("✅ Profile event cron started"))
-  .catch((err) => console.error("❌ Failed to start profile event cron:", err));
+  .then(() => console.log("Profile event cron started"))
+  .catch((err) => console.error("Failed to start profile event cron:", err));
 
 
 export default app;

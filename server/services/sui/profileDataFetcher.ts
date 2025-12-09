@@ -1,0 +1,58 @@
+import { prisma } from "../../prisma/prismaClient";
+import { client } from "../sui/provider"
+
+type ProfileMintPayload = {
+    creator: string;
+    first_name: string;
+    profile_nft_id: string;
+};
+
+export const getProfileObjectIdsFromEvents = async (): Promise<string[]> => {
+    const events = await prisma.profileEvent.findMany({
+        where: { type: { contains: "ProfileNFTMinted" } },
+    });
+
+    const objectIds = events
+        .map(ev => {
+            const payload = ev.payload as ProfileMintPayload;
+            return payload.profile_nft_id;
+        })
+        .filter(Boolean);
+
+    return objectIds;
+};
+
+
+export const fetchProfileData = async (objectId: string) => {
+    try {
+        const profileObject = await client.getObject({ id: objectId });
+        return profileObject;
+    } catch (error) {
+        console.error(`Failed to fetch profile for objectId ${objectId}:`, error);
+        return null;
+    }
+};
+
+
+export const fetchAllProfilesFromEvents = async () => {
+    const objectIds = await getProfileObjectIdsFromEvents();
+
+    if (objectIds.length === 0) {
+        console.log("⚪ No new profile NFT object IDs found.");
+        return [];
+    }
+
+    console.log(`🔹 Fetching data for ${objectIds.length} profiles...`);
+
+    // Fetch all profiles in parallel
+    const profiles = await Promise.all(
+        objectIds.map(id => fetchProfileData(id))
+    );
+
+    // Filter out any null results
+    const validProfiles = profiles.filter(p => p !== null);
+
+    console.log(`Successfully fetched ${validProfiles.length} profiles.`);
+
+    return validProfiles;
+};
