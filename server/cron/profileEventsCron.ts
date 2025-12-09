@@ -5,7 +5,7 @@ import { prisma} from "prisma/config";
 
 
 
-const EVENT_ID = "profileNft"; // identifier for this event type
+const EVENT_ID = "profileNft";
 
 export const startProfileEventCron = async () => {
   console.log("⏳ Starting Sui Profile Event Cron Job...");
