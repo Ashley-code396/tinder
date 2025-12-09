@@ -1,7 +1,7 @@
 import cron from "node-cron";
 import { fetchProfileEvents } from "../services/sui/profileEventsFetcher";
 import { saveEventsToDB } from "../services/db/saveEvent";
-import { prisma} from "prisma/config";
+import prisma from "prisma/config";
 
 
 
