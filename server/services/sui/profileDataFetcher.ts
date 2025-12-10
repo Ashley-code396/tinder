@@ -38,7 +38,7 @@ export const fetchAllProfilesFromEvents = async () => {
     const objectIds = await getProfileObjectIdsFromEvents();
 
     if (objectIds.length === 0) {
-        console.log("⚪ No new profile NFT object IDs found.");
+        console.log("No new profile NFT object IDs found.");
         return [];
     }
 
