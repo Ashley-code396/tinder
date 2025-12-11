@@ -1,6 +1,8 @@
 import { prisma } from "../../prisma/prismaClient";
 import { client } from "../sui/provider"
 
+import { SuiObjectResponse } from "@mysten/sui/dist/cjs/client";
+
 type ProfileMintPayload = {
     creator: string;
     first_name: string;
@@ -12,20 +14,27 @@ export const getProfileObjectIdsFromEvents = async (): Promise<string[]> => {
         where: { type: { contains: "ProfileNFTMinted" } },
     });
 
-    const objectIds = events
+    return events
         .map(ev => {
             const payload = ev.payload as ProfileMintPayload;
-            return payload.profile_nft_id;
+            return payload?.profile_nft_id;
         })
         .filter(Boolean);
-
-    return objectIds;
 };
 
 
 export const fetchProfileData = async (objectId: string) => {
     try {
-        const profileObject = await client.getObject({ id: objectId });
+        const profileObject = await client.getObject({
+            id: objectId,
+            options: {
+                showContent: true,       // includes the object's fields (needed for your DB)
+                showType: true,          // includes the Move type of the object
+                showOwner: true,         // includes the owner address
+                showPreviousTransaction: true, // optional: includes the tx digest that created/updated object
+                showDisplay: true,       // optional: human-readable metadata, if any
+            },
+        });
         return profileObject;
     } catch (error) {
         console.error(`Failed to fetch profile for objectId ${objectId}:`, error);
@@ -42,7 +51,7 @@ export const fetchAllProfilesFromEvents = async () => {
         return [];
     }
 
-    console.log(`🔹 Fetching data for ${objectIds.length} profiles...`);
+    console.log(`Fetching data for ${objectIds.length} profiles...`);
 
     // Fetch all profiles in parallel
     const profiles = await Promise.all(
