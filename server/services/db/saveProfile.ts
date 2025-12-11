@@ -4,7 +4,6 @@ import { prisma } from "../../prisma/prismaClient";
 export const saveProfilesToDB = async (profiles: any[]) => {
   for (const profile of profiles) {
     try {
-      // Extract fields returned by Sui fullnode
       const fields = profile.data?.content?.fields;
       if (!fields) {
         console.error("Invalid profile structure:", profile);
@@ -12,36 +11,40 @@ export const saveProfilesToDB = async (profiles: any[]) => {
       }
 
       const nftObjectId = profile.data.objectId;
+      const ownerAddress = profile.data.owner?.AddressOwner ?? null;
+      const sender = profile.data.creator ?? null;
+      const birthday = new Date(
+        `${fields.birthday_year}-${fields.birthday_month}-${fields.birthday_day}`
+      );
 
       console.log("Saving profile:", nftObjectId);
 
-      // Upsert to avoid duplicates
       await prisma.userProfile.upsert({
-        where: { nftObjectId }, // unique constraint
+        where: { nftObjectId },
         update: {
-          ownerAddress: fields.owner,
+          ownerAddress,
           firstName: fields.first_name,
           email: fields.email,
-          birthday: new Date(Number(fields.birthday)),
+          birthday,
           gender: fields.gender,
           showGender: fields.show_gender,
           interestedIn: fields.interested_in,
           quiltId: fields.quilt_id ?? null,
           photos: fields.photos ?? null,
-          sender: fields.creator,
+          sender,
         },
         create: {
           nftObjectId,
-          ownerAddress: fields.owner,
+          ownerAddress,
           firstName: fields.first_name,
           email: fields.email,
-          birthday: new Date(Number(fields.birthday)),
+          birthday,
           gender: fields.gender,
           showGender: fields.show_gender,
           interestedIn: fields.interested_in,
           quiltId: fields.quilt_id ?? null,
           photos: fields.photos ?? null,
-          sender: fields.creator,
+          sender,
         },
       });
 
