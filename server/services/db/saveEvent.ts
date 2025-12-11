@@ -11,7 +11,7 @@ export const saveEventsToDB = async (events: SuiEvent[]) => {
       create: {
         digest: ev.id.txDigest,
         type: ev.type,
-        sender: ev.sender,
+        sender: ev.sender ?? null,
         payload: ev.parsedJson,
         timestamp: Number(ev.timestampMs),
         // userId: optional if you can match sender to a user profile
