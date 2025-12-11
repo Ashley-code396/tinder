@@ -19,7 +19,7 @@ model UserProfile {
   interestedIn        String
   quiltId             String?
   photos              Json?
-  sender              String
+  sender              String?
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   profileEvents       ProfileEvent[]
@@ -50,7 +50,7 @@ model ProfileEvent {
   id        String       @id @default(uuid())
   digest    String       @unique
   type      String
-  sender    String
+  sender    String?
   payload   Json
   timestamp BigInt
   userId    String?

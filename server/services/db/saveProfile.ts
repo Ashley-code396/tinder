@@ -13,11 +13,14 @@ export const saveProfilesToDB = async (profiles: any[]) => {
       const nftObjectId = profile.data.objectId;
       const ownerAddress = profile.data.owner?.AddressOwner ?? null;
       const sender = profile.data.creator ?? null;
+
       const birthday = new Date(
-        `${fields.birthday_year}-${fields.birthday_month}-${fields.birthday_day}`
+        Number(fields.birthday_year),
+        Number(fields.birthday_month) - 1,
+        Number(fields.birthday_day)
       );
 
-      console.log("Saving profile:", nftObjectId);
+      console.log("Saving profile:", nftObjectId, "birthday:", birthday);
 
       await prisma.userProfile.upsert({
         where: { nftObjectId },
