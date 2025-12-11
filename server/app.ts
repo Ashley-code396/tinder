@@ -14,6 +14,7 @@ import { FRONTEND_URL } from "./config/index";
 import indexRouter from "./routes/index";
 import profileRouter from "./routes/profile";
 import whitelistRouter from "./routes/whitelist";
+import matchRouter from "./routes/matches"
 
 
 // Import cron job
@@ -46,6 +47,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/", indexRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/whitelist", whitelistRouter);
+app.use("/api/matches", matchRouter);
 
 
 // 404 handler
