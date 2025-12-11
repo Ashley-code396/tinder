@@ -1,6 +1,7 @@
 import { prisma }  from "../../prisma/prismaClient"
+import { SuiEvent } from "@mysten/sui/client";
 
-export const saveEventsToDB = async (events: any[]) => {
+export const saveEventsToDB = async (events: SuiEvent[]) => {
   for (const ev of events) {
     console.log("Saving event:", ev.id.txDigest);
 

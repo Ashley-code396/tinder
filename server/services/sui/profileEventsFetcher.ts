@@ -1,4 +1,4 @@
-import { EventId } from "@mysten/sui/client";
+import { EventId, SuiEvent, SuiEventFilter } from "@mysten/sui/client";
 import { client } from "./../sui/provider";
 import { packageId } from "../../config/network";
 
@@ -9,17 +9,19 @@ export const fetchProfileEvents = async ({
   cursor?: EventId | null;
   limit?: number;
 }) => {
+
+  const filter: SuiEventFilter = {
+        MoveEventType: `${packageId}::profileNft::ProfileNFTMinted`,
+    };
   const eventsResult = await client.queryEvents({
-    query: {
-      MoveEventType: `${packageId}::profileNft::ProfileNFTMinted`,
-    },
+    query: filter,
     cursor, 
     limit,
     order: 'ascending'
   });
 
   return {
-    data: eventsResult.data,       
+    data: eventsResult.data as SuiEvent[],       
     nextCursor: eventsResult.nextCursor,
     hasNextPage: eventsResult.hasNextPage,
   };
