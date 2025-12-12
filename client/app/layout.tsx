@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
 import { Toaster } from "sonner";
+import { UserProvider } from "./context/userContext";
 
 
 
@@ -20,8 +21,11 @@ export default function RootLayout({
       <body
       >
         <Toaster richColors position="top-center" />
+        <UserProvider>
+          <Providers>{children}</Providers>
+        </UserProvider>
 
-        <Providers>{children}</Providers>
+
       </body>
     </html>
   );

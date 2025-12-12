@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { BACKEND_URL } from "../constants";
+import { useUser } from "../context/userContext";
 
 interface Profile {
   id: string;
@@ -17,28 +19,29 @@ const RecommendationsPage = () => {
   const [activeTab, setActiveTab] = useState<"matches" | "messages">("matches");
   const [loading, setLoading] = useState(true);
 
+  const { userId } = useUser(); // get userId from context
+
   useEffect(() => {
+    if (!userId) return; // wait until userId is available
+
     const fetchMatches = async () => {
       try {
-        const userId = localStorage.getItem("userId"); // or get from auth context
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/matches/${userId}`);
+        const res = await fetch(`${BACKEND_URL}/api/matches/${userId}`);
         const data = await res.json();
 
-        // Ensure `data` is an array
         if (!Array.isArray(data)) {
           console.error("Expected array but got:", data);
           setProfiles([]);
           return;
         }
 
-        // Transform backend UserProfile into frontend Profile type
         const transformed: Profile[] = data.map((p: any) => ({
           id: p.id,
           name: p.firstName,
           age: new Date().getFullYear() - new Date(p.birthday).getFullYear(),
-          photoUrl: p.photos?.[0] || "https://via.placeholder.com/400x600", // fallback
+          photoUrl: p.photos?.[0] || "https://via.placeholder.com/400x600",
           relationshipIntent: p.relationshipIntents?.map((ri: any) => ri.key).join(", ") || "Unknown",
-          active: true, // placeholder, you can derive from last login
+          active: true,
         }));
 
         setProfiles(transformed);
@@ -50,12 +53,11 @@ const RecommendationsPage = () => {
     };
 
     fetchMatches();
-  }, []);
+  }, [userId]); // re-run when userId becomes available
 
   const handleAction = (action: "like" | "nope" | "superlike" | "next") => {
     if (action !== "next") {
       console.log(`Profile ${profiles[currentIndex]?.name} action:`, action);
-      // Optionally send action to backend
     }
     setCurrentIndex((prev) => Math.min(prev + 1, profiles.length));
   };
@@ -90,14 +92,12 @@ const RecommendationsPage = () => {
           ))}
         </div>
 
-        {/* Scrollable list / placeholder */}
         <div className="mt-6 flex-1 overflow-y-auto pr-1">
           {profiles.length === 0 && (
             <div className="rounded-xl h-56 bg-gradient-to-br from-[#4DA2FF] via-[#3A8CE6] to-[#4DA2FF] p-4 flex flex-col justify-end shadow-lg">
               <h3 className="text-lg font-semibold drop-shadow-md">Start Matching</h3>
               <p className="text-xs leading-relaxed text-white/85 mt-2">
-                Matches will appear here once you start to like people. You can
-                message them directly from here when you're ready.
+                Matches will appear here once you start to like people.
               </p>
             </div>
           )}
@@ -115,7 +115,6 @@ const RecommendationsPage = () => {
           </div>
         ) : (
           <div className="flex flex-col items-center">
-            {/* Profile Card */}
             <div className="relative w-[360px] h-[640px] rounded-2xl overflow-hidden shadow-xl bg-neutral-900 flex flex-col justify-end">
               {profile && (
                 <>
@@ -145,7 +144,6 @@ const RecommendationsPage = () => {
               )}
             </div>
 
-            {/* Floating circular action icons under card */}
             {!noMore && (
               <div className="flex mt-5 gap-4">
                 <button onClick={() => handleAction("nope")} aria-label="Nope" className="w-14 h-14 rounded-full bg-neutral-800 hover:bg-red-600/30 text-red-500 flex items-center justify-center text-2xl font-bold transition-colors">×</button>
@@ -155,19 +153,6 @@ const RecommendationsPage = () => {
             )}
           </div>
         )}
-
-        {/* Bottom action bar */}
-        <div className="fixed bottom-3 left-0 w-full flex justify-center">
-          <div className="flex items-center gap-3 bg-neutral-900/70 backdrop-blur-sm px-4 py-2 rounded-full text-[11px] font-medium border border-neutral-800">
-            <button className="px-2 py-1 rounded hover:bg-neutral-800 transition-colors" disabled={noMore}>Hide</button>
-            <button onClick={() => !noMore && handleAction("nope")} className="px-2 py-1 rounded hover:bg-red-500/20 text-red-400 transition-colors" disabled={noMore}>Nope</button>
-            <button onClick={() => !noMore && handleAction("like")} className="px-2 py-1 rounded hover:bg-green-500/20 text-green-400 transition-colors" disabled={noMore}>Like</button>
-            <button className="px-2 py-1 rounded hover:bg-neutral-800 transition-colors" disabled={noMore}>Open Profile</button>
-            <button className="px-2 py-1 rounded hover:bg-neutral-800 transition-colors" disabled={noMore}>Close Profile</button>
-            <button onClick={() => !noMore && handleAction("superlike")} className="px-2 py-1 rounded hover:bg-blue-500/20 text-sky-400 transition-colors" disabled={noMore}>Super Like</button>
-            <button onClick={() => handleAction("next")} className="px-2 py-1 rounded bg-neutral-800 hover:bg-neutral-700 transition-colors">Next Photo</button>
-          </div>
-        </div>
       </main>
     </div>
   );
