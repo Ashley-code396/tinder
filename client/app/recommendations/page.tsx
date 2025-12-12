@@ -20,6 +20,7 @@ const RecommendationsPage = () => {
   const [loading, setLoading] = useState(true);
 
   const { userId } = useUser();
+  console.log("[RecommendationsPage] userId from context:", userId);
 
   useEffect(() => {
     if (!userId) return;
@@ -28,6 +29,8 @@ const RecommendationsPage = () => {
       try {
         const res = await fetch(`${BACKEND_URL}/api/matches/${userId}`);
         const data = await res.json();
+
+        console.log("[RecommendationsPage] matches data:", data);
 
         if (!Array.isArray(data)) {
           console.error("Expected array but got:", data);
@@ -56,6 +59,7 @@ const RecommendationsPage = () => {
   }, [userId]);
 
   const handleAction = (action: "like" | "nope" | "superlike" | "next") => {
+    console.log(`[RecommendationsPage] Action "${action}" on profile index ${currentIndex}`);
     if (action !== "next") console.log(`Profile ${profiles[currentIndex]?.name} action:`, action);
     setCurrentIndex((prev) => Math.min(prev + 1, profiles.length));
   };

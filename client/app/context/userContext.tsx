@@ -14,10 +14,12 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const storedId = localStorage.getItem("userId");
+    console.log("[UserContext] Loaded from localStorage:", storedId);
     if (storedId) setUserIdState(storedId);
   }, []);
 
   const setUserId = (id: string) => {
+    console.log("[UserContext] setUserId called with:", id);
     localStorage.setItem("userId", id);
     setUserIdState(id);
   };
@@ -34,4 +36,3 @@ export const useUser = () => {
   if (!context) throw new Error("useUser must be used within a UserProvider");
   return context;
 };
-
