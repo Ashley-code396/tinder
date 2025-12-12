@@ -1,7 +1,6 @@
 import { prisma } from "../../prisma/prismaClient";
 import { client } from "../sui/provider"
 
-import { SuiObjectResponse } from "@mysten/sui/dist/cjs/client";
 
 type ProfileMintPayload = {
     creator: string;

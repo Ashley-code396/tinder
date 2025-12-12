@@ -5,7 +5,6 @@ import { client } from "./../services/sui/provider"
 import { prisma } from "../prisma/prismaClient";
 
 
-
 const router = express.Router();
 
 interface SyncProfileBody {
@@ -55,25 +54,33 @@ router.post("/build-profile-tx", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/sync-profile", async (req: Request, res: Response) => {
-  try {
-    const { ownerAddress, firstName, email, birthday } = req.body;
 
-    if (!ownerAddress) return res.status(400).json({ error: "Missing ownerAddress" });
+router.post("/sync-profile",async (req: Request, res: Response) =>{
+  try{
+    const{ ownerAddress } = req.body;
+    if (!ownerAddress){
+      return res.status(400).json({ error: "Missing ownerAddress "});
+    }
 
-    // Upsert profile
-    const user = await prisma.userProfile.upsert({
-      where: { ownerAddress },
-      update: { firstName, email, birthday },
-      create: { ownerAddress, firstName, email, birthday },
+    //Find profile in DB
+    const user = await prisma.userProfile.findFirst({
+      where: {ownerAddress}
     });
+    
+    if (!user){
+      return res.status(404).json({error: "User not found!"})
+    }
 
-    // Return the ID to the frontend
-    res.json({ userId: user.id });
-  } catch (err: any) {
-    console.error("Sync profile failed:", err);
-    res.status(500).json({ error: err.message });
+    //Return ID to the frontend
+    res.json({ userId: user.id});
+
+
+  } catch (err: any){
+    console.error("Fetch profile failed:", err);
+    res.status(500).json({error: err.message});
   }
-});
+  
+})
+
 
 export default router;

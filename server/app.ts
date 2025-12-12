@@ -32,7 +32,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Handle preflight requests for all routes
+// Handle preflight requests for all routes 
 app.options("*", cors(corsOptions));
 
 // Middleware
@@ -46,6 +46,7 @@ app.use(express.static(path.join(__dirname, "public")));
 // Routes
 app.use("/", indexRouter);
 app.use("/api/profile", profileRouter);
+
 app.use("/api/whitelist", whitelistRouter);
 app.use("/api/matches", matchRouter);
 

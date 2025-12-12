@@ -19,10 +19,10 @@ const RecommendationsPage = () => {
   const [activeTab, setActiveTab] = useState<"matches" | "messages">("matches");
   const [loading, setLoading] = useState(true);
 
-  const { userId } = useUser(); // get userId from context
+  const { userId } = useUser();
 
   useEffect(() => {
-    if (!userId) return; // wait until userId is available
+    if (!userId) return;
 
     const fetchMatches = async () => {
       try {
@@ -53,12 +53,10 @@ const RecommendationsPage = () => {
     };
 
     fetchMatches();
-  }, [userId]); // re-run when userId becomes available
+  }, [userId]);
 
   const handleAction = (action: "like" | "nope" | "superlike" | "next") => {
-    if (action !== "next") {
-      console.log(`Profile ${profiles[currentIndex]?.name} action:`, action);
-    }
+    if (action !== "next") console.log(`Profile ${profiles[currentIndex]?.name} action:`, action);
     setCurrentIndex((prev) => Math.min(prev + 1, profiles.length));
   };
 
@@ -71,21 +69,17 @@ const RecommendationsPage = () => {
     <div className="min-h-screen w-full bg-[#0f0f11] text-white flex">
       {/* LEFT SIDEBAR */}
       <aside className="w-[320px] border-r border-neutral-800 flex flex-col p-4">
-        {/* Tabs */}
         <div className="flex gap-6 text-sm font-medium">
-          {[
-            { key: "matches", label: "Matches" },
-            { key: "messages", label: "Messages" },
-          ].map((t) => (
+          {["matches", "messages"].map((tab) => (
             <button
-              key={t.key}
-              onClick={() => setActiveTab(t.key as "matches" | "messages")}
+              key={tab}
+              onClick={() => setActiveTab(tab as "matches" | "messages")}
               className={`relative pb-2 transition-colors ${
-                activeTab === t.key ? "text-white" : "text-neutral-400 hover:text-neutral-200"
+                activeTab === tab ? "text-white" : "text-neutral-400 hover:text-neutral-200"
               }`}
             >
-              {t.label}
-              {activeTab === t.key && (
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {activeTab === tab && (
                 <span className="absolute -bottom-[1px] left-0 h-[3px] w-full rounded-full bg-gradient-to-r from-[#ff0057] via-[#ff2f5d] to-[#ff8a00]" />
               )}
             </button>
@@ -146,9 +140,9 @@ const RecommendationsPage = () => {
 
             {!noMore && (
               <div className="flex mt-5 gap-4">
-                <button onClick={() => handleAction("nope")} aria-label="Nope" className="w-14 h-14 rounded-full bg-neutral-800 hover:bg-red-600/30 text-red-500 flex items-center justify-center text-2xl font-bold transition-colors">×</button>
-                <button onClick={() => handleAction("superlike")} aria-label="Super Like" className="w-14 h-14 rounded-full bg-neutral-800 hover:bg-blue-600/30 text-sky-400 flex items-center justify-center text-2xl font-bold transition-colors">★</button>
-                <button onClick={() => handleAction("like")} aria-label="Like" className="w-14 h-14 rounded-full bg-neutral-800 hover:bg-green-600/30 text-green-400 flex items-center justify-center text-2xl font-bold transition-colors">♥</button>
+                <button onClick={() => handleAction("nope")} className="w-14 h-14 rounded-full bg-neutral-800 hover:bg-red-600/30 text-red-500 flex items-center justify-center text-2xl font-bold transition-colors">×</button>
+                <button onClick={() => handleAction("superlike")} className="w-14 h-14 rounded-full bg-neutral-800 hover:bg-blue-600/30 text-sky-400 flex items-center justify-center text-2xl font-bold transition-colors">★</button>
+                <button onClick={() => handleAction("like")} className="w-14 h-14 rounded-full bg-neutral-800 hover:bg-green-600/30 text-green-400 flex items-center justify-center text-2xl font-bold transition-colors">♥</button>
               </div>
             )}
           </div>
