@@ -255,8 +255,7 @@ const ProfilePage = () => {
 
     const data = await response.json();
     const txBytesBase64 = data.txBytesBase64;
-    console.log("📦 Received txBytes:", txBytesBase64);
-
+    
 
     // Execute the transaction
     await signAndExecute(
