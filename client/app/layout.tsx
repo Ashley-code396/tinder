@@ -5,7 +5,6 @@ import { Toaster } from "sonner";
 import { UserProvider } from "./context/userContext";
 
 
-
 export const metadata: Metadata = {
   title: "Sui Tinder",
   description: "A next-generation crypto dating app powered by Sui",
