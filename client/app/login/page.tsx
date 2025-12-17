@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useState} from 'react';
 import { useRouter } from 'next/navigation';
 import { Shield, Loader2, Check, LogOut, Wallet } from 'lucide-react';
