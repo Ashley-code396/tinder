@@ -6,7 +6,6 @@ interface UserContextType {
   userId: string | null;
   setUserId: (id: string) => void;
 }
-
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
