@@ -6,6 +6,7 @@ import { handleSyncProfile } from "../utils/handleSyncProfile";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 
 
+
 const ProfileSync = () => {
   const { userId, setUserId } = useUser();
   const account = useCurrentAccount();
